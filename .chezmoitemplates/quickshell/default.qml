@@ -77,7 +77,7 @@ Singleton {
 
     property int notifPanelWidth: 360
     property int notifPanelHeight: 420
-    property int maxStoredNotifications: 50
+    property int maxStoredNotifications: 20
 
     property string volumeApp: "pwvucontrol"
     property string wirelessApp: "iwgtk"

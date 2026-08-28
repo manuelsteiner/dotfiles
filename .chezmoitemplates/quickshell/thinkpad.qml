@@ -89,7 +89,7 @@ Singleton {
     // ── Notifications ──
     property int notifPanelWidth: 360
     property int notifPanelHeight: 420
-    property int maxStoredNotifications: 50
+    property int maxStoredNotifications: 20
 
     // ── External commands ──
     property string volumeApp: "pwvucontrol"
