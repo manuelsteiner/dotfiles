@@ -1,0 +1,10 @@
+{{- $host := promptStringOnce . "host" "Host name" .chezmoi.hostname -}}
+{{- $role := promptChoiceOnce . "role" "Machine role" (list "private" "work") "private" -}}
+{{- $sourceDir := promptStringOnce . "sourceDir" "Chezmoi source directory" (printf "%s/Projects/dotfiles" .chezmoi.homeDir) -}}
+sourceDir = {{ $sourceDir | quote }}
+
+[data]
+# `host` is the stable identifier used by dotfile templates. It commonly
+# matches the system hostname, but is deliberately configured independently.
+host = {{ $host | quote }}
+role = {{ $role | quote }}

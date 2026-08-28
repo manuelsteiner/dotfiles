@@ -1,0 +1,15 @@
+[accounts.proton]
+default = true
+email = "you@proton.me"
+display-name = "Your Name"
+
+envelope.list.page-size = 25
+envelope.list.datetime-fmt = "%Y-%m-%d %H:%M"
+
+mailbox.alias.inbox = "Inbox"
+mailbox.alias.sent = "Sent"
+mailbox.alias.drafts = "Drafts"
+mailbox.alias.trash = "Trash"
+
+imap.server = "imap://127.0.0.1:1143"
+smtp.server = "smtp://127.0.0.1:1025"

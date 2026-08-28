@@ -1,0 +1,14 @@
+[Unit]
+Description=Proton Mail Bridge
+After=graphical-session.target dbus.service
+Wants=graphical-session.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/protonmail-bridge-core -n
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

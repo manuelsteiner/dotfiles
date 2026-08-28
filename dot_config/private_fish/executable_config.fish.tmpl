@@ -1,0 +1,20 @@
+set -gx EDITOR nvim
+
+if test -d "$HOME/.asdf"
+    set -gx ASDF_DATA_DIR "$HOME/.asdf"
+    set -gx PATH "$ASDF_DATA_DIR/shims" $PATH
+end
+
+{{ if eq .role "private" }}
+if set -q XDG_RUNTIME_DIR
+    set -gx SSH_AUTH_SOCK "$XDG_RUNTIME_DIR/ssh-agent.socket"
+end
+
+if test -f "$XDG_CONFIG_HOME/himalaya/config.local.toml"
+    set -gx HIMALAYA_CONFIG "$XDG_CONFIG_HOME/himalaya/config.toml:$XDG_CONFIG_HOME/himalaya/config.local.toml"
+end
+{{ end }}
+
+if test -f "$HOME/.config/fish/config.local.fish"
+    source "$HOME/.config/fish/config.local.fish"
+end

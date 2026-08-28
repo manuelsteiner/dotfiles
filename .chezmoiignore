@@ -1,0 +1,26 @@
+{{ if ne .chezmoi.os "linux" }}
+.config/hypr
+.config/mako
+.config/waybar
+.config/wofi
+{{ end }}
+
+# Repository documentation, not a target file.
+README.md
+
+# These desktop-specific preferences describe this private machine. Do not
+# install them on a work machine. Add work-only files under the inverse block
+# as they are introduced.
+{{ if ne .role "private" }}
+.config/darkman
+.config/fuzzel
+.config/gtk-3.0
+.config/gtk-4.0
+.config/himalaya
+.config/mimeapps.list
+.config/hypr
+.config/quickshell
+.config/systemd/user/geoclue-agent.service
+.config/systemd/user/protonmail-bridge.service
+.config/systemd/user/ssh-agent.service
+{{ end }}
