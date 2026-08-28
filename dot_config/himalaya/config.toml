@@ -1,7 +1,5 @@
 [accounts.proton]
 default = true
-email = "you@proton.me"
-display-name = "Your Name"
 
 envelope.list.page-size = 25
 envelope.list.datetime-fmt = "%Y-%m-%d %H:%M"

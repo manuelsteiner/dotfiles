@@ -10,8 +10,13 @@ if set -q XDG_RUNTIME_DIR
     set -gx SSH_AUTH_SOCK "$XDG_RUNTIME_DIR/ssh-agent.socket"
 end
 
-if test -f "$XDG_CONFIG_HOME/himalaya/config.local.toml"
-    set -gx HIMALAYA_CONFIG "$XDG_CONFIG_HOME/himalaya/config.toml:$XDG_CONFIG_HOME/himalaya/config.local.toml"
+set -l himalaya_config_home "$HOME/.config"
+if set -q XDG_CONFIG_HOME
+    set himalaya_config_home "$XDG_CONFIG_HOME"
+end
+
+if test -f "$himalaya_config_home/himalaya/config.local.toml"
+    set -gx HIMALAYA_CONFIG "$himalaya_config_home/himalaya/config.toml:$himalaya_config_home/himalaya/config.local.toml"
 end
 {{ end }}
 

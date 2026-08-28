@@ -31,8 +31,9 @@ These files deliberately stay outside chezmoi:
 - `~/.config/fish/config.local.fish` for machine-specific Fish setup.
 - `~/.config/git/config.local` for Git identity, work remotes, and other
   personal settings.
-- `~/.config/himalaya/config.local.toml` for the Proton Bridge username and
-  credential. Fish sets `HIMALAYA_CONFIG` to merge it with the managed config.
+- `~/.config/himalaya/config.local.toml` for the Proton email address, display
+  name, Bridge username, and credential. Fish sets `HIMALAYA_CONFIG` to merge
+  it over the managed config.
 
 ## Private services
 
