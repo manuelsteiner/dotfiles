@@ -16,25 +16,24 @@ Scope {
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
             anchors { top: true; right: true }
             implicitWidth: 380
-            implicitHeight: notifCol.implicitHeight + 20
+            implicitHeight: notifList.contentHeight + 20
             color: "transparent"
 
-            ColumnLayout {
-                id: notifCol
+            ListView {
+                id: notifList
                 anchors.top: parent.top
                 anchors.right: parent.right
                 anchors.topMargin: 10
                 anchors.rightMargin: 10
                 width: 360
                 spacing: 8
+                interactive: false
+                model: root.activeNotifications
 
-                Repeater {
-                    model: root.activeNotifications
-
-                    delegate: Rectangle {
+                delegate: Rectangle {
                         required property var modelData
                         required property int index
-                        Layout.fillWidth: true
+                        width: notifList.width
                         implicitHeight: notifContent.implicitHeight + 24
                         radius: 10
                         color: Theme.surface
@@ -152,7 +151,6 @@ Scope {
                             }
                         }
 
-                    }
                 }
             }
         }

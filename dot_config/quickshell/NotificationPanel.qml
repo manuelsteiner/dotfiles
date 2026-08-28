@@ -127,27 +127,21 @@ Scope {
                     }
 
                     // Scrollable notification list
-                    Flickable {
+                    ListView {
+                        id: storedList
                         visible: root.storedNotifications.length > 0
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        contentHeight: storedCol.implicitHeight
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
+                        spacing: 6
+                        model: root.storedNotifications
 
-                        ColumnLayout {
-                            id: storedCol
-                            width: parent.width
-                            spacing: 6
-
-                            Repeater {
-                                model: root.storedNotifications
-
-                                delegate: Rectangle {
+                        delegate: Rectangle {
                                     id: storedDelegate
                                     required property var modelData
                                     required property int index
-                                    Layout.fillWidth: true
+                                    width: storedList.width
                                     implicitHeight: storedContent.implicitHeight + 20
                                     radius: 8
                                     color: Theme.overlay
@@ -264,8 +258,6 @@ Scope {
                                             }
                                         }
                                     }
-                                }
-                            }
                         }
                     }
                 }
