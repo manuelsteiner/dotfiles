@@ -1,0 +1,47 @@
+add_newline = false
+
+format = """
+$directory\
+$sudo\
+${env_var.ZMX_SESSION}\
+$git_branch\
+$character\
+"""
+
+[directory]
+format = "[$path ]($style)"
+style = "fg:subtle"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[directory.substitutions]
+Documents = "󰈙"
+Downloads = ""
+Music = ""
+Pictures = ""
+
+[sudo]
+style = "fg:red"
+symbol = "# "
+disabled = false
+
+[env_var.ZMX_SESSION]
+variable = "ZMX_SESSION"
+format = "[in $env_value ]($style)"
+style = "fg:subtle"
+description = "The current zmx session name"
+
+[git_branch]
+format = '[on $branch ]($style)'
+style = "fg:yellow"
+symbol = ""
+ignore_branches = ["master", "main"]
+
+[character]
+format = "$symbol "
+success_symbol = "[❯](blue)"
+error_symbol = "[❯](red)"
+vimcmd_symbol = "[❮](orange)"
+vimcmd_replace_one_symbol = "[❮](cyan)"
+vimcmd_replace_symbol = "[❮](cyan)"
+vimcmd_visual_symbol = "[❮](magenta)"

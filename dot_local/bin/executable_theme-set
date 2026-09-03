@@ -135,6 +135,26 @@ export GUM_CHOOSE_ITEM_FOREGROUND='$subtle'
 export GUM_CHOOSE_SELECTED_FOREGROUND='${!preferred_accent}'
 EOF
 
+    printf 'palette = "active"\n\n' > "$output/starship.toml"
+    cat "$config_dir/theme/starship.toml" >> "$output/starship.toml"
+    cat >> "$output/starship.toml" <<EOF
+
+
+[palettes.active]
+base = "$base"
+surface = "$surface"
+overlay = "$overlay"
+muted = "$muted"
+subtle = "$subtle"
+text = "$text"
+red = "$red"
+yellow = "$yellow"
+orange = "$orange"
+blue = "$blue"
+cyan = "$cyan"
+magenta = "$magenta"
+EOF
+
     printf '%s\n' '--theme=ansi' > "$output/bat.conf"
     cat > "$output/eza.yml" <<EOF
 colourful: true
