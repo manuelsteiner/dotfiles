@@ -1,7 +1,4 @@
-if command -q fish_config
-    fish_config theme choose "Rose Pine"
-end
-
-if command -q vivid
-    set -gx LS_COLORS "$(vivid generate rose-pine)"
+set -l theme_state "$HOME/.local/state/dotfiles-theme/current/fish.fish"
+if test -r "$theme_state"
+    source "$theme_state"
 end

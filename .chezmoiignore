@@ -5,6 +5,13 @@
 .config/wofi
 {{ end }}
 
+# `theme-set` owns these active-theme links. The selected theme is local state
+# and must not be reset by `chezmoi apply`.
+.config/bat/config
+.config/eza/theme.yml
+.config/hypr/colors/current.conf
+.config/quickshell/Theme.qml
+
 # Repository documentation, not a target file.
 README.md
 

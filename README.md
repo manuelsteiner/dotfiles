@@ -11,6 +11,7 @@ that directory:
 ```sh
 chezmoi init --source="$HOME/Projects/dotfiles"
 chezmoi apply
+theme-set rose-pine
 ```
 
 Chezmoi prompts for the host and role on first run. Use `nuc` / `private` on
@@ -34,6 +35,34 @@ These files deliberately stay outside chezmoi:
 - `~/.config/himalaya/config.local.toml` for the Proton email address, display
   name, Bridge username, and credential. Fish sets `HIMALAYA_CONFIG` to merge
   it over the managed config.
+- `~/.local/state/dotfiles-theme/current` for the selected desktop and terminal
+  theme. Theme definitions and `theme-set` are managed, but the selection is
+  deliberately local.
+
+## Themes
+
+Run `theme-set` to choose a theme with Gum or FZF, or pass one explicitly:
+
+```sh
+theme-set kanagawa-dragon
+```
+
+`theme-set --list` shows the available names. It updates Kitty, Fuzzel, Fish,
+FZF, bat, eza, Hyprland, Hyprlock, Quickshell, and Neovim's colorscheme. It
+reloads Hyprland, Kitty, and a running Quickshell. New Fish, Fuzzel, and
+Neovim sessions read the selected theme when they start. It also selects
+htop's Nord color layout while keeping your htop settings intact; restart htop
+after switching.
+
+Each theme also has an opt-in `-oled` variant with a pure-black base, for
+example `theme-set rose-pine-oled`. Its panels retain the original theme's dark
+surface colors for separation. Neovim keeps the corresponding upstream syntax
+palette while explicitly setting its main editing surfaces to black; floating
+windows retain their theme backgrounds.
+
+Each palette chooses Quickshell's default accent. Leave `accentColor` as
+`"default"` in `Config.qml` to use it, or set a palette role there when a
+machine needs a fixed accent.
 
 ## Neovim language servers
 

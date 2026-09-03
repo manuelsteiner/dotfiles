@@ -1,4 +1,4 @@
-source=~/.config/hypr/colors/rose-pine.conf
+source=~/.config/hypr/colors/current.conf
 
 $background = {{ .chezmoi.homeDir }}/Pictures/wallpaper.png
 
@@ -25,7 +25,7 @@ general {
 label {
     monitor =
     text = cmd[update:1000] echo "$(date +"%H:%M")"
-    color = $gold
+    color = $accent
     font_size = 120
     font_family = Noto Bold
     position = 0, -140
@@ -38,6 +38,10 @@ label {
     monitor =
     text = cmd[update:1000] echo "<span>$(date '+%A, %d %B')</span>"
     color = $text
+    shadow_passes = 1
+    shadow_size = 3
+    shadow_color = 0xb8000000
+    shadow_boost = 1.0
     font_size = 30
     font_family = Noto Bold
     position = 0, -320
@@ -50,6 +54,10 @@ label {
     monitor =
     text = $USER
     color = $text
+    shadow_passes = 1
+    shadow_size = 3
+    shadow_color = 0xb8000000
+    shadow_boost = 1.0
     font_size = 25
     font_family = Noto Bold
     position = 0, -70
@@ -72,8 +80,8 @@ input-field {
     fade_on_empty = false
     font_family = Noto Bold
     placeholder_text = Enter Password
-    check_color = $gold
-    fail_color = $love
+    check_color = $yellow
+    fail_color = $red
     fail_text = $FAIL <b>($ATTEMPTS)</b>
     hide_input = false
     position = 0, -140

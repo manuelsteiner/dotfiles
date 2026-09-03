@@ -377,8 +377,8 @@ Scope {
                 anchors.verticalCenter: parent.verticalCenter
                 text: del.device.battery + "%"
                 font { family: Config.fontFamily; pixelSize: 11 }
-                color: del.device.battery <= 20 ? Theme.love
-                    : del.device.battery <= 40 ? Theme.gold
+                color: del.device.battery <= 20 ? Theme.red
+                    : del.device.battery <= 40 ? Theme.yellow
                     : Theme.subtle
             }
 

@@ -17,9 +17,9 @@ Rectangle {
     }
     property bool hasBattery: level >= 0
 
-    property color tierColor: level < 20 ? Theme.love
-                            : level < 50 ? Theme.gold
-                            : Theme.pine
+    property color tierColor: level < 20 ? Theme.red
+                            : level < 50 ? Theme.yellow
+                            : Theme.blue
 
     color: batMA.containsMouse
         ? (hasBattery ? tierColor : Theme.muted)

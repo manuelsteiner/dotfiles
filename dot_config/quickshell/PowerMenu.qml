@@ -45,12 +45,12 @@ Scope {
 
                     Repeater {
                         model: [
-                            { label: "Lock",      icon: "󰌾", cmd: "loginctl lock-session",  clr: Theme.foam },
-                            { label: "Log out",   icon: "󰍃", cmd: "hyprctl dispatch 'hl.dsp.exit()'",  clr: Theme.gold },
-                            { label: "Suspend",   icon: "󰤄", cmd: "systemctl suspend",      clr: Theme.iris },
-                            { label: "Hibernate", icon: "󰥹", cmd: "systemctl hibernate",    clr: Theme.pine },
-                            { label: "Reboot",    icon: "󰜉", cmd: "systemctl reboot",       clr: Theme.rose },
-                            { label: "Shut down", icon: "󰐥",  cmd: "systemctl poweroff",     clr: Theme.love },
+                            { label: "Lock",      icon: "󰌾", cmd: "loginctl lock-session",  clr: Theme.cyan },
+                            { label: "Log out",   icon: "󰍃", cmd: "hyprctl dispatch 'hl.dsp.exit()'",  clr: Theme.yellow },
+                            { label: "Suspend",   icon: "󰤄", cmd: "systemctl suspend",      clr: Theme.magenta },
+                            { label: "Hibernate", icon: "󰥹", cmd: "systemctl hibernate",    clr: Theme.blue },
+                            { label: "Reboot",    icon: "󰜉", cmd: "systemctl reboot",       clr: Theme.orange },
+                            { label: "Shut down", icon: "󰐥",  cmd: "systemctl poweroff",     clr: Theme.red },
                         ]
                         delegate: Rectangle {
                             required property var modelData

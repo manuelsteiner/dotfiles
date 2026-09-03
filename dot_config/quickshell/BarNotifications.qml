@@ -28,7 +28,7 @@ Rectangle {
         width: Math.max(14, badgeText.implicitWidth + 6)
         height: 14
         radius: 7
-        color: Theme.love
+        color: Theme.red
 
         Text {
             id: badgeText

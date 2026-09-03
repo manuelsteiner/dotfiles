@@ -1,0 +1,350 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+config_dir="${XDG_CONFIG_HOME:-$HOME/.config}"
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles-theme"
+themes_dir="$config_dir/theme/themes"
+
+list_themes() {
+    find "$themes_dir" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort
+}
+
+choose_theme() {
+    if command -v gum >/dev/null 2>&1; then
+        local gum_theme="$state_dir/current/gum.sh"
+        [[ -r "$gum_theme" ]] && source "$gum_theme"
+        list_themes | gum choose --header='Choose a theme'
+    elif command -v fzf >/dev/null 2>&1; then
+        list_themes | fzf --prompt='Theme > '
+    else
+        select theme in $(list_themes); do
+            test -n "${theme:-}" && printf '%s\n' "$theme" && return
+        done
+    fi
+}
+
+hex() {
+    printf '%s' "${1#\#}"
+}
+
+render() {
+    local output="$1"
+    mkdir -p "$output/quickshell"
+
+    cat > "$output/kitty.conf" <<EOF
+background $base
+foreground $text
+selection_background $highlightMed
+selection_foreground $text
+cursor $text
+cursor_text_color $base
+url_color $magenta
+active_border_color $blue
+inactive_border_color $highlightMed
+tab_bar_background $base
+active_tab_background $base
+active_tab_foreground ${!preferred_accent}
+inactive_tab_background $base
+inactive_tab_foreground $muted
+color0 $overlay
+color1 $red
+color2 $blue
+color3 $yellow
+color4 $cyan
+color5 $magenta
+color6 $orange
+color7 $text
+color8 $muted
+color9 $red
+color10 $blue
+color11 $yellow
+color12 $cyan
+color13 $magenta
+color14 $orange
+color15 $text
+EOF
+
+    cat > "$output/fuzzel.ini" <<EOF
+[colors]
+background=${base}ff
+text=${text}ff
+prompt=${text}ff
+placeholder=${muted}ff
+input=${text}ff
+match=${orange}ff
+selection=${highlightMed}ff
+selection-text=${text}ff
+selection-match=${orange}ff
+counter=${yellow}ff
+border=${orange}ff
+EOF
+
+    cat > "$output/hypr.lua" <<EOF
+return {
+    base = 0xff$(hex "$base"), surface = 0xff$(hex "$surface"), overlay = 0xff$(hex "$overlay"),
+    muted = 0xff$(hex "$muted"), subtle = 0xff$(hex "$subtle"), text = 0xff$(hex "$text"),
+    red = 0xff$(hex "$red"), yellow = 0xff$(hex "$yellow"), orange = 0xff$(hex "$orange"),
+    blue = 0xff$(hex "$blue"), cyan = 0xff$(hex "$cyan"), magenta = 0xff$(hex "$magenta"),
+    highlightLow = 0xff$(hex "$highlightLow"), highlightMed = 0xff$(hex "$highlightMed"), highlightHigh = 0xff$(hex "$highlightHigh"),
+}
+EOF
+
+    cat > "$output/hyprlock.conf" <<EOF
+\$base = 0xff$(hex "$base")
+\$surface = 0xff$(hex "$surface")
+\$overlay = 0xff$(hex "$overlay")
+\$text = 0xff$(hex "$text")
+\$red = 0xff$(hex "$red")
+\$yellow = 0xff$(hex "$yellow")
+\$accent = 0xff$(hex "${!preferred_accent}")
+EOF
+
+    cat > "$output/fish.fish" <<EOF
+set -g fish_color_normal $(hex "$text")
+set -g fish_color_command $(hex "$magenta")
+set -g fish_color_keyword $(hex "$cyan")
+set -g fish_color_quote $(hex "$yellow")
+set -g fish_color_redirection $(hex "$blue")
+set -g fish_color_end $(hex "$subtle")
+set -g fish_color_error $(hex "$red")
+set -g fish_color_param $(hex "$orange")
+set -g fish_color_comment $(hex "$muted")
+set -g fish_color_selection --background=$(hex "$surface")
+set -g fish_color_autosuggestion $(hex "$muted")
+set -g fish_pager_color_background --background=$(hex "$surface")
+set -g fish_pager_color_prefix $(hex "$cyan")
+set -g fish_pager_color_completion $(hex "$subtle")
+set -g fish_pager_color_selected_background --background=$(hex "$overlay")
+set -g fish_pager_color_selected_completion $(hex "$text")
+set -gx LS_COLORS 'di=38;2;$(rgb "$blue"):ln=38;2;$(rgb "$cyan"):ex=38;2;$(rgb "$magenta"):*.tar=38;2;$(rgb "$yellow"):*.zip=38;2;$(rgb "$yellow"):*.jpg=38;2;$(rgb "$orange"):*.png=38;2;$(rgb "$orange")'
+
+set -l gum_theme "\$HOME/.local/state/dotfiles-theme/current/gum.sh"
+if test -r "\$gum_theme"
+    source "\$gum_theme"
+end
+EOF
+
+    cat > "$output/fzf.fish" <<EOF
+set -gx FZF_DEFAULT_OPTS '--color=fg:$subtle,bg:$base,hl:$orange --color=fg+:$text,bg+:$overlay,hl+:$orange --color=border:$highlightMed,header:$blue,gutter:$base --color=spinner:$yellow,info:$cyan,separator:$highlightMed --color=pointer:$magenta,marker:$red,prompt:$subtle'
+EOF
+
+    cat > "$output/gum.sh" <<EOF
+export GUM_CHOOSE_CURSOR_FOREGROUND='${!preferred_accent}'
+export GUM_CHOOSE_HEADER_FOREGROUND='${!preferred_accent}'
+export GUM_CHOOSE_ITEM_FOREGROUND='$subtle'
+export GUM_CHOOSE_SELECTED_FOREGROUND='${!preferred_accent}'
+EOF
+
+    printf '%s\n' '--theme=ansi' > "$output/bat.conf"
+    cat > "$output/eza.yml" <<EOF
+colourful: true
+filekinds:
+  normal: {foreground: "$text"}
+  directory: {foreground: "$blue"}
+  symlink: {foreground: "$cyan"}
+  executable: {foreground: "$magenta"}
+  pipe: {foreground: "$yellow"}
+  socket: {foreground: "$orange"}
+  block_device: {foreground: "$orange"}
+  char_device: {foreground: "$yellow"}
+  special: {foreground: "$magenta"}
+  mount_point: {foreground: "$highlightMed"}
+perms:
+  user_read: {foreground: "$subtle"}
+  user_write: {foreground: "$highlightMed"}
+  user_execute_file: {foreground: "$magenta"}
+  user_execute_other: {foreground: "$magenta"}
+  group_read: {foreground: "$subtle"}
+  group_write: {foreground: "$highlightMed"}
+  group_execute: {foreground: "$magenta"}
+  other_read: {foreground: "$subtle"}
+  other_write: {foreground: "$highlightMed"}
+  other_execute: {foreground: "$magenta"}
+  special_user_file: {foreground: "$magenta"}
+  special_other: {foreground: "$highlightMed"}
+  attribute: {foreground: "$subtle"}
+size:
+  major: {foreground: "$subtle"}
+  minor: {foreground: "$cyan"}
+  number_byte: {foreground: "$subtle"}
+  number_kilo: {foreground: "$highlightHigh"}
+  number_mega: {foreground: "$blue"}
+  number_giga: {foreground: "$magenta"}
+  number_huge: {foreground: "$magenta"}
+  unit_byte: {foreground: "$subtle"}
+  unit_kilo: {foreground: "$blue"}
+  unit_mega: {foreground: "$magenta"}
+  unit_giga: {foreground: "$magenta"}
+  unit_huge: {foreground: "$cyan"}
+users:
+  user_you: {foreground: "$yellow"}
+  user_root: {foreground: "$red"}
+  user_other: {foreground: "$magenta"}
+  group_yours: {foreground: "$highlightHigh"}
+  group_other: {foreground: "$muted"}
+  group_root: {foreground: "$red"}
+links:
+  normal: {foreground: "$cyan"}
+  multi_link_file: {foreground: "$blue"}
+git:
+  new: {foreground: "$cyan"}
+  modified: {foreground: "$yellow"}
+  deleted: {foreground: "$red"}
+  renamed: {foreground: "$magenta"}
+  ignored: {foreground: "$muted"}
+  typechange: {foreground: "$magenta"}
+  conflicted: {foreground: "$orange"}
+git_repo:
+  branch_main: {foreground: "$subtle"}
+  branch_other: {foreground: "$magenta"}
+  git_clean: {foreground: "$cyan"}
+  git_dirty: {foreground: "$red"}
+security_context:
+  colon: {foreground: "$subtle"}
+  user: {foreground: "$cyan"}
+  role: {foreground: "$magenta"}
+  typ: {foreground: "$muted"}
+  range: {foreground: "$magenta"}
+file_type:
+  image: {foreground: "$yellow"}
+  video: {foreground: "$red"}
+  music: {foreground: "$cyan"}
+  lossless: {foreground: "$muted"}
+  crypto: {foreground: "$highlightMed"}
+  document: {foreground: "$subtle"}
+  compressed: {foreground: "$magenta"}
+  temp: {foreground: "$orange"}
+  compiled: {foreground: "$blue"}
+  build: {foreground: "$muted"}
+  source: {foreground: "$orange"}
+punctuation: {foreground: "$highlightHigh"}
+date: {foreground: "$blue"}
+inode: {foreground: "$subtle"}
+blocks: {foreground: "$muted"}
+header: {foreground: "$subtle"}
+octal: {foreground: "$cyan"}
+flags: {foreground: "$magenta"}
+symlink_path: {foreground: "$cyan"}
+control_char: {foreground: "$blue"}
+broken_symlink: {foreground: "$red"}
+broken_path_overlay: {foreground: "$highlightHigh"}
+EOF
+    printf 'return { colorscheme = "%s", oled = %s }\n' "$nvim_colorscheme" "$oled" > "$output/nvim.lua"
+
+    cat > "$output/quickshell/Theme.qml" <<EOF
+pragma Singleton
+import Quickshell
+import QtQuick
+
+Singleton {
+    readonly property color base: "$base"
+    readonly property color surface: "$surface"
+    readonly property color overlay: "$overlay"
+    readonly property color muted: "$muted"
+    readonly property color subtle: "$subtle"
+    readonly property color text: "$text"
+    readonly property color red: "$red"
+    readonly property color redDim: "$redDim"
+    readonly property color yellow: "$yellow"
+    readonly property color yellowDim: "$yellowDim"
+    readonly property color orange: "$orange"
+    readonly property color orangeDim: "$orangeDim"
+    readonly property color blue: "$blue"
+    readonly property color blueDim: "$blueDim"
+    readonly property color cyan: "$cyan"
+    readonly property color cyanDim: "$cyanDim"
+    readonly property color magenta: "$magenta"
+    readonly property color magentaDim: "$magentaDim"
+    readonly property var _accentMap: ({ red: red, yellow: yellow, orange: orange, blue: blue, cyan: cyan, magenta: magenta })
+    readonly property var _accentDimMap: ({ red: redDim, yellow: yellowDim, orange: orangeDim, blue: blueDim, cyan: cyanDim, magenta: magentaDim })
+    readonly property color defaultAccent: _accentMap["$preferred_accent"] ?? yellow
+    readonly property color defaultAccentDim: _accentDimMap["$preferred_accent"] ?? yellowDim
+    readonly property color accent: Config.accentColor === "default" ? defaultAccent : (_accentMap[Config.accentColor] ?? defaultAccent)
+    readonly property color accentDim: Config.accentColor === "default" ? defaultAccentDim : (_accentDimMap[Config.accentColor] ?? defaultAccentDim)
+    readonly property color volumeColor: _accentMap[Config.volumeAccent] ?? magenta
+    readonly property color microphoneColor: _accentMap[Config.microphoneAccent] ?? magenta
+    readonly property color bluetoothColor: _accentMap[Config.bluetoothAccent] ?? cyan
+    readonly property color ethernetColor: _accentMap[Config.ethernetAccent] ?? blue
+    readonly property color wirelessColor: _accentMap[Config.wirelessAccent] ?? blue
+    readonly property color wireguardColor: _accentMap[Config.wireguardAccent] ?? blue
+    readonly property color brightnessColor: _accentMap[Config.brightnessAccent] ?? yellow
+    readonly property color notificationColor: _accentMap[Config.notificationAccent] ?? orange
+    readonly property color powerColor: _accentMap[Config.powerAccent] ?? red
+    readonly property color urgentColor: _accentMap[Config.urgentAccent] ?? red
+    readonly property color highlightLow: "$highlightLow"
+    readonly property color highlightMed: "$highlightMed"
+    readonly property color highlightHigh: "$highlightHigh"
+}
+EOF
+}
+
+rgb() {
+    local value
+    value="$(hex "$1")"
+    printf '%d;%d;%d' "0x${value:0:2}" "0x${value:2:2}" "0x${value:4:2}"
+}
+
+reload_apps() {
+    command -v hyprctl >/dev/null 2>&1 && hyprctl reload >/dev/null 2>&1 || true
+    command -v kitty >/dev/null 2>&1 && pkill -USR1 -x kitty >/dev/null 2>&1 || true
+    if pgrep -x quickshell >/dev/null 2>&1; then
+        pkill -x quickshell
+        for _ in {1..20}; do
+            pgrep -x quickshell >/dev/null 2>&1 || break
+            sleep 0.1
+        done
+        command -v quickshell >/dev/null 2>&1 && quickshell --path "$config_dir/quickshell" --daemonize --no-duplicate --no-color
+    fi
+}
+
+update_htop() {
+    local htoprc="$config_dir/htop/htoprc"
+    test -f "$htoprc" || return 0
+    if grep -q '^color_scheme=' "$htoprc"; then
+        sed -i "s/^color_scheme=.*/color_scheme=$htop_scheme/" "$htoprc"
+    else
+        printf '\ncolor_scheme=%s\n' "$htop_scheme" >> "$htoprc"
+    fi
+}
+
+no_reload=false
+case "${1:-}" in
+    --list) list_themes; exit 0 ;;
+    --no-reload) no_reload=true; shift ;;
+    -h|--help) printf 'Usage: theme-set [--list] [--no-reload] [theme]\n'; exit 0 ;;
+esac
+
+theme="${1:-}"
+test -n "$theme" || theme="$(choose_theme)"
+test -n "$theme" || exit 0
+case "$theme" in *[!a-z0-9-]*) printf 'theme-set: invalid theme name\n' >&2; exit 1 ;; esac
+palette="$themes_dir/$theme/palette.conf"
+test -r "$palette" || { printf 'theme-set: unknown theme: %s\n' "$theme" >&2; exit 1; }
+
+source "$palette"
+oled=false
+[[ "$theme" == *-oled ]] && oled=true
+required=(base surface overlay muted subtle text red redDim yellow yellowDim orange orangeDim blue blueDim cyan cyanDim magenta magentaDim highlightLow highlightMed highlightHigh nvim_colorscheme htop_scheme preferred_accent)
+for key in "${required[@]}"; do
+    test -n "${!key:-}" || { printf 'theme-set: %s is missing %s\n' "$theme" "$key" >&2; exit 1; }
+done
+
+mkdir -p "$state_dir"
+tmp_dir="$(mktemp -d "$state_dir/.$theme.XXXXXX")"
+trap 'rm -rf "$tmp_dir"' EXIT
+render "$tmp_dir"
+rm -rf "$state_dir/$theme"
+mv "$tmp_dir" "$state_dir/$theme"
+ln -sfnT "$state_dir/$theme" "$state_dir/current"
+trap - EXIT
+
+mkdir -p "$config_dir/quickshell" "$config_dir/bat" "$config_dir/eza" "$config_dir/hypr/colors"
+ln -sfnT "$state_dir/current/quickshell/Theme.qml" "$config_dir/quickshell/Theme.qml"
+ln -sfnT "$state_dir/current/bat.conf" "$config_dir/bat/config"
+ln -sfnT "$state_dir/current/eza.yml" "$config_dir/eza/theme.yml"
+ln -sfnT "$state_dir/current/hyprlock.conf" "$config_dir/hypr/colors/current.conf"
+printf '%s\n' "$theme" > "$state_dir/current.name"
+update_htop
+
+if ! "$no_reload"; then reload_apps; fi
+printf 'Theme set to %s\n' "$theme"

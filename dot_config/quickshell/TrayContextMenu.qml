@@ -84,7 +84,7 @@ Scope {
                                     visible: modelData.buttonType !== 0
                                     font.family: Config.fontFamily
                                     font.pixelSize: 12
-                                    color: Theme.iris
+                                    color: Theme.magenta
                                     text: modelData.checkState > 0
                                         ? (modelData.buttonType === 1 ? "󰄵" : "󰄮")
                                         : (modelData.buttonType === 1 ? "󰄱" : "󰄯")

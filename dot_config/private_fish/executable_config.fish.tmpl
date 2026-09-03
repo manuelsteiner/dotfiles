@@ -1,5 +1,9 @@
 set -gx EDITOR nvim
 
+if test -d "$HOME/.local/bin"; and not contains -- "$HOME/.local/bin" $PATH
+    set -gx PATH "$HOME/.local/bin" $PATH
+end
+
 if test -d "$HOME/.asdf"
     set -gx ASDF_DATA_DIR "$HOME/.asdf"
     set -gx PATH "$ASDF_DATA_DIR/shims" $PATH

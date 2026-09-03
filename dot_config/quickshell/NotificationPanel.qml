@@ -53,7 +53,7 @@ Scope {
                             visible: root.storedNotifications.length > 0
                             width: Math.max(20, countText.implicitWidth + 8)
                             height: 20; radius: 10
-                            color: Theme.love
+                            color: Theme.red
 
                             Text {
                                 id: countText
@@ -87,7 +87,7 @@ Scope {
                                     text: "󰅖"
                                     font.family: Config.fontFamily
                                     font.pixelSize: 11
-                                    color: clearAllMA.containsMouse ? Theme.love : Theme.muted
+                                    color: clearAllMA.containsMouse ? Theme.red : Theme.muted
                                 }
                                 Text {
                                     text: "Clear all"
@@ -176,13 +176,13 @@ Scope {
                                             Rectangle {
                                                 visible: storedDelegate.modelData.urgency === NotificationUrgency.Critical
                                                 width: 6; height: 6; radius: 3
-                                                color: Theme.love
+                                                color: Theme.red
                                             }
 
                                             Rectangle {
                                                 visible: storedDelegate.modelData.urgency === NotificationUrgency.Low
                                                 width: 6; height: 6; radius: 3
-                                                color: Theme.foam
+                                                color: Theme.cyan
                                             }
 
                                             Rectangle {
@@ -194,7 +194,7 @@ Scope {
                                                     text: "󰅖"
                                                     font.family: Config.fontFamily
                                                     font.pixelSize: 11
-                                                    color: closeHover.hovered ? Theme.love : Theme.subtle
+                                                    color: closeHover.hovered ? Theme.red : Theme.subtle
                                                 }
 
                                                 MouseArea {

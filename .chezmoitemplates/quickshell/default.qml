@@ -48,17 +48,19 @@ Singleton {
         { ws: 7, icon: "󰢹" },
     ]
 
-    property string accentColor: "gold"
-    property string volumeAccent: "iris"
-    property string microphoneAccent: "iris"
-    property string bluetoothAccent: "foam"
-    property string ethernetAccent: "pine"
-    property string wirelessAccent: "pine"
-    property string wireguardAccent: "pine"
-    property string brightnessAccent: "gold"
-    property string notificationAccent: "rose"
-    property string powerAccent: "love"
-    property string urgentAccent: "love"
+    // "default" uses the active theme's preferred accent. Set any palette
+    // role here to override it: red, yellow, orange, blue, cyan, magenta.
+    property string accentColor: "default"
+    property string volumeAccent: "magenta"
+    property string microphoneAccent: "magenta"
+    property string bluetoothAccent: "cyan"
+    property string ethernetAccent: "blue"
+    property string wirelessAccent: "blue"
+    property string wireguardAccent: "blue"
+    property string brightnessAccent: "yellow"
+    property string notificationAccent: "orange"
+    property string powerAccent: "red"
+    property string urgentAccent: "red"
 
     property bool barIslands: true
     property int barGap: 6

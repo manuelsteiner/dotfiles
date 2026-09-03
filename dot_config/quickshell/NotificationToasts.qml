@@ -78,7 +78,7 @@ Scope {
                                 Rectangle {
                                     visible: modelData.urgency === NotificationUrgency.Critical
                                     width: 6; height: 6; radius: 3
-                                    color: Theme.love
+                                    color: Theme.red
                                 }
                                 Rectangle {
                                     width: 20; height: 20; radius: 4
@@ -88,7 +88,7 @@ Scope {
                                         text: "󰅖"
                                         font.family: Config.fontFamily
                                         font.pixelSize: 12
-                                        color: closeMA.containsMouse ? Theme.love : Theme.subtle
+                                        color: closeMA.containsMouse ? Theme.red : Theme.subtle
                                     }
                                     MouseArea {
                                         id: closeMA
