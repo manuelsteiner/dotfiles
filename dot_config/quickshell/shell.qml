@@ -179,6 +179,10 @@ ShellRoot {
     property real trayMenuY: 0
 
     function openTrayMenu(menuHandle, globalY) {
+        if (root.trayMenuVisible && root.trayMenuHandle === menuHandle) {
+            root.closeTrayMenu()
+            return
+        }
         root.closeAllPanels("trayMenu")
         root.trayMenuHandle = menuHandle
         root.trayMenuY = globalY
