@@ -56,7 +56,9 @@ after switching.
 
 OpenCode uses its built-in `system` theme, which follows the active Kitty ANSI
 palette. Himalaya likewise uses terminal colors. Obsidian is intentionally not
-managed by the switcher because its themes and CSS are vault-specific GUI state.
+managed globally: `theme-set` instead updates the generated `Dotfiles Theme` in
+`~/Zettelkasten/.obsidian/themes/` and selects it for that vault. Restart
+Obsidian after switching.
 
 Each theme also has an opt-in `-oled` variant with a pure-black base, for
 example `theme-set rose-pine-oled`. Its panels retain the original theme's dark
