@@ -189,6 +189,18 @@ vim.lsp.config("ansiblels", {
   filetypes = { "yaml.ansible" },
 })
 
+-- ~/.config/nvim has no project marker that lua_ls recognises. `lazyvim.json`
+-- identifies it when Neovim started elsewhere, while the remaining markers
+-- preserve normal Lua project root resolution.
+vim.lsp.config("lua_ls", {
+  root_markers = {
+    "lazyvim.json",
+    { ".emmyrc.json", ".luarc.json", ".luarc.jsonc" },
+    { ".luacheckrc", ".stylua.toml", "stylua.toml", "selene.toml", "selene.yml" },
+    { ".git" },
+  },
+})
+
 -- nvim-lspconfig ships a `before_init` for tailwindcss, which shadows the
 -- global `processId = nil` above. Re-apply it here (this explicit call wins
 -- over the runtimepath file) while keeping the upstream tabSize default.
