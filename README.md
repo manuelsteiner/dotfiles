@@ -48,11 +48,15 @@ theme-set kanagawa-dragon
 ```
 
 `theme-set --list` shows the available names. It updates Kitty, Fuzzel, Fish,
-FZF, bat, eza, Hyprland, Hyprlock, Quickshell, and Neovim's colorscheme. It
+FZF, Starship, bat, eza, Delta, Hyprland, Hyprlock, Quickshell, and Neovim's colorscheme. It
 reloads Hyprland, Kitty, and a running Quickshell. New Fish, Fuzzel, and
 Neovim sessions read the selected theme when they start. It also selects
 htop's Nord color layout while keeping your htop settings intact; restart htop
 after switching.
+
+OpenCode uses its built-in `system` theme, which follows the active Kitty ANSI
+palette. Himalaya likewise uses terminal colors. Obsidian is intentionally not
+managed by the switcher because its themes and CSS are vault-specific GUI state.
 
 Each theme also has an opt-in `-oled` variant with a pure-black base, for
 example `theme-set rose-pine-oled`. Its panels retain the original theme's dark

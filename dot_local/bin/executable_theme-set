@@ -155,6 +155,28 @@ cyan = "$cyan"
 magenta = "$magenta"
 EOF
 
+    cat > "$output/delta.gitconfig" <<EOF
+[delta]
+    dark = true
+    file-style = "$text" bold
+    file-decoration-style = "$highlightMed" ul
+    hunk-header-decoration-style = "$highlightMed" box ul
+    hunk-header-file-style = "$blue" bold
+    hunk-header-line-number-style = "$orange" bold
+    line-numbers-left-style = "$muted"
+    line-numbers-right-style = "$muted"
+    line-numbers-minus-style = "$red"
+    line-numbers-plus-style = "$cyan"
+    line-numbers-zero-style = "$muted"
+    minus-style = syntax "$redDim"
+    minus-emph-style = syntax "$red"
+    plus-style = syntax "$cyanDim"
+    plus-emph-style = syntax "$cyan"
+    zero-style = syntax
+    whitespace-error-style = "$yellow" reverse
+    blame-palette = "$base" "$surface" "$overlay" "$highlightMed"
+EOF
+
     printf '%s\n' '--theme=ansi' > "$output/bat.conf"
     cat > "$output/eza.yml" <<EOF
 colourful: true
