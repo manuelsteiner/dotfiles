@@ -16,7 +16,8 @@ Rectangle {
         font.pixelSize: 18
         color: bellMA.containsMouse ? Theme.base
             : root.notifSuppressed ? Theme.muted : Theme.notificationColor
-        text: root.notifSuppressed ? "󰂛" : "󰂚"
+        text: root.notifSuppressed ? "󰪑"
+            : root.storedNotifications.length > 0 ? "󰂚" : "󰂜"
     }
 
     Rectangle {

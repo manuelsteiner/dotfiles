@@ -65,7 +65,6 @@ Item {
                     text: parent.modelData.icon
                     font.family: Config.fontFamily
                     font.pixelSize: 18
-                    font.bold: parent.active
                     color: bgStyle
                         ? (parent.active ? Theme.base
                             : wsMA.containsMouse ? Theme.base

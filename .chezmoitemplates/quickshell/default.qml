@@ -41,7 +41,7 @@ Singleton {
     property var workspaces: [
         { ws: 1, icon: "" },
         { ws: 2, icon: "󰈹" },
-        { ws: 3, icon: "" },
+        { ws: 3, icon: "󰭹" },
         { ws: 4, icon: "󰠮" },
         { ws: 5, icon: "󱜐" },
         { ws: 6, icon: "󰕰" },
