@@ -14,7 +14,7 @@ choose_theme() {
         printf 'theme-set: fzf is required for the interactive picker\n' >&2
         return 1
     }
-    list_themes | fzf --prompt='Theme > ' --height='~50%' --border
+    list_themes | fzf --prompt='Theme > ' --reverse --height='~100%'
 }
 
 hex() {
