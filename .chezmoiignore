@@ -8,6 +8,9 @@
 # Repository documentation, not a target file.
 README.md
 
+# Container build context for the Neovim language servers, not a target file.
+lsp-containers
+
 # These desktop-specific preferences describe this private machine. Do not
 # install them on a work machine. Add work-only files under the inverse block
 # as they are introduced.

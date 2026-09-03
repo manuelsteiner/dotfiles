@@ -1,0 +1,24 @@
+# texlab. Prebuilt release tarball (no upstream checksum; TEXLAB_SHA256 is
+# trust-on-first-use, recorded in versions.env). No TeX Live in the image:
+# build/chktex/forward-search are disabled in the texlab settings, so completion,
+# navigation, hover and symbols work; `:LspTexlabBuild` would run on the host.
+FROM docker.io/library/debian:trixie-slim AS fetch
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+ARG TEXLAB_VERSION
+ARG TEXLAB_SHA256
+
+RUN set -eux; \
+    curl -fsSL -o /tmp/texlab.tar.gz \
+      "https://github.com/latex-lsp/texlab/releases/download/v${TEXLAB_VERSION}/texlab-x86_64-linux.tar.gz"; \
+    echo "${TEXLAB_SHA256}  /tmp/texlab.tar.gz" | sha256sum -c -; \
+    tar -xzf /tmp/texlab.tar.gz -C /usr/local/bin texlab
+
+FROM docker.io/library/debian:trixie-slim
+
+COPY --from=fetch /usr/local/bin/texlab /usr/local/bin/texlab
+
+ENTRYPOINT ["texlab"]

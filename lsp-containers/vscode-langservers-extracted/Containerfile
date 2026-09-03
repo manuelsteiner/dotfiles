@@ -1,0 +1,10 @@
+# cssls + html + jsonls. One npm package, three servers. The entrypoint binary
+# (vscode-css-language-server / vscode-html-language-server /
+# vscode-json-language-server) is selected per server via `cmd` in lua/lsp.lua.
+FROM docker.io/library/node:22-alpine
+
+ARG VSCODE_LANGSERVERS_EXTRACTED_VERSION
+
+RUN npm install -g --omit=dev \
+      "vscode-langservers-extracted@${VSCODE_LANGSERVERS_EXTRACTED_VERSION}" \
+ && npm cache clean --force

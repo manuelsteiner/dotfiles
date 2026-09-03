@@ -1,0 +1,13 @@
+# ts_ls. Bundles a fallback `typescript`; a project's own node_modules/typescript
+# (visible via the same-path project mount) takes precedence at runtime.
+FROM docker.io/library/node:22-alpine
+
+ARG TYPESCRIPT_LANGUAGE_SERVER_VERSION
+ARG TYPESCRIPT_VERSION
+
+RUN npm install -g --omit=dev \
+      "typescript-language-server@${TYPESCRIPT_LANGUAGE_SERVER_VERSION}" \
+      "typescript@${TYPESCRIPT_VERSION}" \
+ && npm cache clean --force
+
+ENTRYPOINT ["typescript-language-server", "--stdio"]

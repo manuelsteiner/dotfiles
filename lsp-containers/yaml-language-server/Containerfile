@@ -1,0 +1,10 @@
+# yamlls. Runs offline (--network=none); the SchemaStore catalog is disabled in
+# lsp/yamlls.lua.
+FROM docker.io/library/node:22-alpine
+
+ARG YAML_LANGUAGE_SERVER_VERSION
+
+RUN npm install -g --omit=dev "yaml-language-server@${YAML_LANGUAGE_SERVER_VERSION}" \
+ && npm cache clean --force
+
+ENTRYPOINT ["yaml-language-server", "--stdio"]

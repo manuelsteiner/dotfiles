@@ -1,0 +1,15 @@
+# docker_language_server: Docker's unified server for Dockerfiles, Compose and
+# Bake. Replaces the separate dockerls + docker_compose_language_service.
+FROM docker.io/library/golang:1.27-alpine AS build
+
+ARG DOCKER_LANGUAGE_SERVER_VERSION
+ENV CGO_ENABLED=0
+
+RUN go install \
+      "github.com/docker/docker-language-server/cmd/docker-language-server@v${DOCKER_LANGUAGE_SERVER_VERSION}"
+
+FROM docker.io/library/alpine:3.22
+
+COPY --from=build /go/bin/docker-language-server /usr/local/bin/docker-language-server
+
+ENTRYPOINT ["docker-language-server", "start", "--stdio"]

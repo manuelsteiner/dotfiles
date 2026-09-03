@@ -1,0 +1,13 @@
+# gopls. Keeps the full Go toolchain: gopls shells out to `go` for
+# build/list/env. The module cache is mounted read-only at runtime
+# (GOMODCACHE); GOTOOLCHAIN=local (set in lua/lsp.lua) prevents any toolchain
+# download.
+FROM docker.io/library/golang:1.27-alpine
+
+ARG GOPLS_VERSION
+
+RUN go install "golang.org/x/tools/gopls@v${GOPLS_VERSION}" \
+ && mv /go/bin/gopls /usr/local/bin/gopls \
+ && rm -rf /root/.cache/go-build /go/pkg/mod
+
+ENTRYPOINT ["gopls"]

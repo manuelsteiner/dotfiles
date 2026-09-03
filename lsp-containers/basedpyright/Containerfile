@@ -1,0 +1,10 @@
+# basedpyright. Bundles its own typeshed; resolves a project's third-party
+# imports by reading the in-project virtualenv via the same-path project mount.
+FROM docker.io/library/node:22-alpine
+
+ARG BASEDPYRIGHT_VERSION
+
+RUN npm install -g --omit=dev "basedpyright@${BASEDPYRIGHT_VERSION}" \
+ && npm cache clean --force
+
+ENTRYPOINT ["basedpyright-langserver", "--stdio"]

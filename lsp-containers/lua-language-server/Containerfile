@@ -1,0 +1,29 @@
+# lua_ls. Prebuilt release tarball (no upstream checksum;
+# LUA_LANGUAGE_SERVER_SHA256 is trust-on-first-use, recorded in versions.env).
+# $VIMRUNTIME and the Hyprland Lua stubs are mounted read-only at runtime.
+FROM docker.io/library/debian:trixie-slim AS fetch
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+ARG LUA_LANGUAGE_SERVER_VERSION
+ARG LUA_LANGUAGE_SERVER_SHA256
+
+RUN set -eux; \
+    curl -fsSL -o /tmp/luals.tar.gz \
+      "https://github.com/LuaLS/lua-language-server/releases/download/${LUA_LANGUAGE_SERVER_VERSION}/lua-language-server-${LUA_LANGUAGE_SERVER_VERSION}-linux-x64.tar.gz"; \
+    echo "${LUA_LANGUAGE_SERVER_SHA256}  /tmp/luals.tar.gz" | sha256sum -c -; \
+    mkdir -p /opt/lua-language-server; \
+    tar -xzf /tmp/luals.tar.gz -C /opt/lua-language-server
+
+FROM docker.io/library/debian:trixie-slim
+
+COPY --from=fetch /opt/lua-language-server /opt/lua-language-server
+# A wrapper, not a symlink: lua-language-server resolves its bundled resources
+# from argv[0]'s real directory and misbehaves when symlinked.
+RUN printf '#!/bin/sh\nexec /opt/lua-language-server/bin/lua-language-server "$@"\n' \
+      > /usr/local/bin/lua-language-server \
+ && chmod +x /usr/local/bin/lua-language-server
+
+ENTRYPOINT ["lua-language-server"]

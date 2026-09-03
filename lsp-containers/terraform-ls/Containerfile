@@ -1,0 +1,29 @@
+# terraformls. terraform-ls shells out to `terraform` for some features, so a
+# pinned matching terraform binary is baked in (rather than bind-mounting the
+# host one). Provider schemas come from `.terraform/` written by `terraform init`
+# on the host, visible via the same-path project mount. Both downloads are
+# verified against HashiCorp's signed SHA256SUMS.
+FROM docker.io/library/alpine:3.22 AS fetch
+
+RUN apk add --no-cache curl unzip
+
+ARG TERRAFORM_LS_VERSION
+ARG TERRAFORM_LS_SHA256
+ARG TERRAFORM_VERSION
+ARG TERRAFORM_SHA256
+
+WORKDIR /dl
+RUN set -eux; \
+    curl -fsSLO "https://releases.hashicorp.com/terraform-ls/${TERRAFORM_LS_VERSION}/terraform-ls_${TERRAFORM_LS_VERSION}_linux_amd64.zip"; \
+    echo "${TERRAFORM_LS_SHA256}  terraform-ls_${TERRAFORM_LS_VERSION}_linux_amd64.zip" | sha256sum -c -; \
+    unzip -o "terraform-ls_${TERRAFORM_LS_VERSION}_linux_amd64.zip" -d /out; \
+    curl -fsSLO "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"; \
+    echo "${TERRAFORM_SHA256}  terraform_${TERRAFORM_VERSION}_linux_amd64.zip" | sha256sum -c -; \
+    unzip -o "terraform_${TERRAFORM_VERSION}_linux_amd64.zip" -d /out
+
+FROM docker.io/library/alpine:3.22
+
+COPY --from=fetch /out/terraform-ls /usr/local/bin/terraform-ls
+COPY --from=fetch /out/terraform /usr/local/bin/terraform
+
+ENTRYPOINT ["terraform-ls", "serve"]

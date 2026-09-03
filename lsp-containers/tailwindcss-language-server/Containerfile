@@ -1,0 +1,10 @@
+# tailwindcss.
+FROM docker.io/library/node:22-alpine
+
+ARG TAILWINDCSS_LANGUAGE_SERVER_VERSION
+
+RUN npm install -g --omit=dev \
+      "@tailwindcss/language-server@${TAILWINDCSS_LANGUAGE_SERVER_VERSION}" \
+ && npm cache clean --force
+
+ENTRYPOINT ["tailwindcss-language-server", "--stdio"]

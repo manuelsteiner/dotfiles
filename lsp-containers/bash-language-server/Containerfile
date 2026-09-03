@@ -1,0 +1,11 @@
+# bashls. Node server; shells out to `bash` and `git` for workspace analysis
+# and to `shellcheck` for diagnostics.
+FROM docker.io/library/node:22-alpine
+
+ARG BASH_LANGUAGE_SERVER_VERSION
+
+RUN apk add --no-cache bash git shellcheck \
+ && npm install -g --omit=dev "bash-language-server@${BASH_LANGUAGE_SERVER_VERSION}" \
+ && npm cache clean --force
+
+ENTRYPOINT ["bash-language-server", "start"]

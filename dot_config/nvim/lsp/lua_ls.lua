@@ -1,3 +1,7 @@
+-- lua_ls runs in a container (see lua/lsp.lua). $VIMRUNTIME and the Hyprland
+-- Lua type stubs are bind-mounted read-only at their real paths so the `vim`
+-- and Hyprland `hl` globals resolve. The nvim config tree is indexed when it is
+-- itself the workspace root.
 return {
     settings = {
         Lua = {
@@ -6,12 +10,12 @@ return {
             },
             hint = {
                 enable = true,
-                arrayIndex = "Disable"
+                arrayIndex = "Disable",
             },
             workspace = {
                 library = {
-                    [vim.fn.expand("$VIMRUNTIME/lua")] = true,
-                    [vim.fn.stdpath("config") .. "/lua"] = true,
+                    vim.env.VIMRUNTIME,
+                    "/usr/share/hypr/stubs",
                 },
             },
         },

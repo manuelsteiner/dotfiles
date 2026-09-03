@@ -1,0 +1,25 @@
+# qmlls (Qt QML language server) with Quickshell's QML modules.
+#
+# Reproducibility: the whole package set is frozen to one archive.archlinux.org
+# snapshot (QT_ARCHIVE_SNAPSHOT). The base image tag floats, but every installed
+# package is pinned by the snapshot mirror. Bump the snapshot only when the
+# containerised Qt/Quickshell must track a newer host runtime, not on every host
+# Qt patch release.
+#
+# SigLevel=Never: archived packages predate the current keyring in the base
+# image. Packages are fetched over HTTPS from the official Arch archive.
+FROM docker.io/library/archlinux:base
+
+ARG QT_ARCHIVE_SNAPSHOT
+
+RUN set -eux; \
+    printf 'Server=https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "${QT_ARCHIVE_SNAPSHOT}" \
+      > /etc/pacman.d/mirrorlist; \
+    sed -i 's/^ *SigLevel .*/SigLevel = Never/' /etc/pacman.conf; \
+    pacman -Sy --noconfirm --needed qt6-declarative quickshell; \
+    pacman -Scc --noconfirm; \
+    rm -rf /var/cache/pacman/pkg/* /var/lib/pacman/sync/*
+
+# `-I /usr/lib/qt6/qml` (added in lua/lsp.lua) points qmlls at the Quickshell
+# modules; QtQuick and friends are found via qmlls' built-in Qt paths.
+ENTRYPOINT ["qmlls6"]

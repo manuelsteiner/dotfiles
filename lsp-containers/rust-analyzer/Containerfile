@@ -1,0 +1,26 @@
+# rust_analyzer. Per adjustment #7 the toolchain lives in the image: a full Rust
+# toolchain + rust-src provide the sysroot/std for completion and run
+# `cargo check` / proc-macro builds. Only the crate *sources* are mounted at
+# runtime (~/.cargo/registry, read-only). CARGO_HOME points at a writable tmpfs
+# path (set in lua/lsp.lua) with that read-only registry mounted inside it.
+#
+# The rust-analyzer binary has no upstream checksum; RUST_ANALYZER_SHA256 is
+# trust-on-first-use, recorded in versions.env.
+FROM docker.io/library/rust:1-slim-trixie
+
+ARG RUST_ANALYZER_VERSION
+ARG RUST_ANALYZER_SHA256
+
+RUN set -eux; \
+    rustup component add rust-src; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends curl ca-certificates; \
+    curl -fsSL -o /tmp/ra.gz \
+      "https://github.com/rust-lang/rust-analyzer/releases/download/${RUST_ANALYZER_VERSION}/rust-analyzer-x86_64-unknown-linux-gnu.gz"; \
+    echo "${RUST_ANALYZER_SHA256}  /tmp/ra.gz" | sha256sum -c -; \
+    gunzip -c /tmp/ra.gz > /usr/local/bin/rust-analyzer; \
+    chmod +x /usr/local/bin/rust-analyzer; \
+    apt-get purge -y curl; apt-get autoremove -y; \
+    rm -rf /var/lib/apt/lists/* /tmp/ra.gz
+
+ENTRYPOINT ["rust-analyzer"]

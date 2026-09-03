@@ -35,6 +35,24 @@ These files deliberately stay outside chezmoi:
   name, Bridge username, and credential. Fish sets `HIMALAYA_CONFIG` to merge
   it over the managed config.
 
+## Neovim language servers
+
+Neovim runs every language server in a restricted Podman container instead of
+installing servers with Mason. The image recipes live in `lsp-containers/` (kept in
+the repo, not deployed). Build them once:
+
+```sh
+cd ~/Projects/dotfiles/lsp-containers && ./build.sh
+```
+
+Podman never auto-pulls these; an enabled-but-unbuilt server just fails to start
+until it is built. `lsp-containers/README.md` documents the sandbox, per-server
+mounts, and version management (`lsp-containers/versions.env`). The Neovim side is
+`.config/nvim/lua/lsp.lua` plus the helper `.config/nvim/lua/lsp/container.lua`.
+
+Old Mason-installed server binaries under `~/.local/share/nvim/mason/` are now
+unused and can be removed.
+
 ## Private services
 
 Private machines receive user-unit files for the SSH agent, GeoClue agent, and

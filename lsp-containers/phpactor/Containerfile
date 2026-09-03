@@ -1,0 +1,17 @@
+# phpactor. Official phar on a PHP CLI base (no upstream checksum; PHPACTOR_SHA256
+# is trust-on-first-use, recorded in versions.env). Project dependencies are read
+# from vendor/ via the same-path project mount; run `composer install` on the host.
+FROM docker.io/library/php:8.3-cli-alpine
+
+ARG PHPACTOR_VERSION
+ARG PHPACTOR_SHA256
+
+RUN set -eux; \
+    apk add --no-cache git curl; \
+    curl -fsSL -o /usr/local/bin/phpactor \
+      "https://github.com/phpactor/phpactor/releases/download/${PHPACTOR_VERSION}/phpactor.phar"; \
+    echo "${PHPACTOR_SHA256}  /usr/local/bin/phpactor" | sha256sum -c -; \
+    chmod +x /usr/local/bin/phpactor; \
+    php -r 'exit((int) !(extension_loaded("dom") && extension_loaded("mbstring") && extension_loaded("tokenizer")));'
+
+ENTRYPOINT ["phpactor", "language-server"]
