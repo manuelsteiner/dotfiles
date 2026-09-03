@@ -41,7 +41,7 @@ These files deliberately stay outside chezmoi:
 
 ## Themes
 
-Run `theme-set` to choose a theme with Gum or FZF, or pass one explicitly:
+Run `theme-set` to search and choose a theme with FZF, or pass one explicitly:
 
 ```sh
 theme-set kanagawa-dragon

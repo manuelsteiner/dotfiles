@@ -10,17 +10,11 @@ list_themes() {
 }
 
 choose_theme() {
-    if command -v gum >/dev/null 2>&1; then
-        local gum_theme="$state_dir/current/gum.sh"
-        [[ -r "$gum_theme" ]] && source "$gum_theme"
-        list_themes | gum choose --header='Choose a theme'
-    elif command -v fzf >/dev/null 2>&1; then
-        list_themes | fzf --prompt='Theme > '
-    else
-        select theme in $(list_themes); do
-            test -n "${theme:-}" && printf '%s\n' "$theme" && return
-        done
-    fi
+    command -v fzf >/dev/null 2>&1 || {
+        printf 'theme-set: fzf is required for the interactive picker\n' >&2
+        return 1
+    }
+    list_themes | fzf --prompt='Theme > ' --height='~50%' --border
 }
 
 hex() {
@@ -118,21 +112,10 @@ set -g fish_pager_color_selected_background --background=$(hex "$overlay")
 set -g fish_pager_color_selected_completion $(hex "$text")
 set -gx LS_COLORS 'di=38;2;$(rgb "$blue"):ln=38;2;$(rgb "$cyan"):ex=38;2;$(rgb "$magenta"):*.tar=38;2;$(rgb "$yellow"):*.zip=38;2;$(rgb "$yellow"):*.jpg=38;2;$(rgb "$orange"):*.png=38;2;$(rgb "$orange")'
 
-set -l gum_theme "\$HOME/.local/state/dotfiles-theme/current/gum.sh"
-if test -r "\$gum_theme"
-    source "\$gum_theme"
-end
 EOF
 
     cat > "$output/fzf.fish" <<EOF
 set -gx FZF_DEFAULT_OPTS '--color=fg:$subtle,bg:$base,hl:$orange --color=fg+:$text,bg+:$overlay,hl+:$orange --color=border:$highlightMed,header:$blue,gutter:$base --color=spinner:$yellow,info:$cyan,separator:$highlightMed --color=pointer:$magenta,marker:$red,prompt:$subtle'
-EOF
-
-    cat > "$output/gum.sh" <<EOF
-export GUM_CHOOSE_CURSOR_FOREGROUND='${!preferred_accent}'
-export GUM_CHOOSE_HEADER_FOREGROUND='${!preferred_accent}'
-export GUM_CHOOSE_ITEM_FOREGROUND='$subtle'
-export GUM_CHOOSE_SELECTED_FOREGROUND='${!preferred_accent}'
 EOF
 
     printf 'palette = "active"\n\n' > "$output/starship.toml"
@@ -357,7 +340,9 @@ case "${1:-}" in
 esac
 
 theme="${1:-}"
-test -n "$theme" || theme="$(choose_theme)"
+if test -z "$theme"; then
+    theme="$(choose_theme)" || exit $?
+fi
 test -n "$theme" || exit 0
 case "$theme" in *[!a-z0-9-]*) printf 'theme-set: invalid theme name\n' >&2; exit 1 ;; esac
 palette="$themes_dir/$theme/palette.conf"
