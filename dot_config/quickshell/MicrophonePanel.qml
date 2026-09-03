@@ -105,6 +105,10 @@ Scope {
         property bool nodeMuted: node.audio?.muted ?? false
         signal setDefault()
 
+        function setVolume(value) {
+            root.setPanelMicVolume(del.node, value)
+        }
+
         implicitHeight: visible ? col.height + 16 : 0
         radius: 8
         color: isDefault ? Theme.overlay
@@ -158,14 +162,42 @@ Scope {
             }
 
             Rectangle {
-                width: parent.width; height: 4; radius: 2
-                color: ma.containsMouse ? Theme.highlightHigh : Theme.highlightMed
+                id: volumeSlider
+                z: 1
+                width: parent.width; height: 5; radius: 2.5
+                color: sliderMouse.containsMouse || sliderMouse.pressed
+                    ? Theme.highlightHigh : Theme.highlightMed
                 Rectangle {
                     width: parent.width * Math.min(del.nodeVol, 1.0)
                     height: parent.height; radius: parent.radius
                     color: del.isDefault ? Theme.microphoneColor
                         : del.nodeMuted ? Theme.muted : Theme.subtle
                     Behavior on width { NumberAnimation { duration: 80 } }
+                }
+
+                MouseArea {
+                    id: sliderMouse
+                    z: 1
+                    anchors.fill: parent
+                    anchors.topMargin: -6
+                    anchors.bottomMargin: -6
+                    hoverEnabled: true
+                    preventStealing: true
+                    cursorShape: Qt.PointingHandCursor
+                    function setFromPosition(position) {
+                        del.setVolume(position / width)
+                    }
+                    onPressed: mouse => setFromPosition(mouse.x)
+                    onPositionChanged: mouse => {
+                        if (pressed) setFromPosition(mouse.x)
+                    }
+                    onWheel: wheel => {
+                        var step = 0.05
+                        if (wheel.angleDelta.y > 0)
+                            del.setVolume(del.nodeVol + step)
+                        else if (wheel.angleDelta.y < 0)
+                            del.setVolume(del.nodeVol - step)
+                    }
                 }
             }
         }
@@ -187,9 +219,9 @@ Scope {
                 if (!del.node.audio) return
                 var step = 0.05
                 if (wheel.angleDelta.y > 0)
-                    del.node.audio.volume = Math.min(del.node.audio.volume + step, 1.0)
+                    del.setVolume(del.nodeVol + step)
                 else if (wheel.angleDelta.y < 0)
-                    del.node.audio.volume = Math.max(del.node.audio.volume - step, 0.0)
+                    del.setVolume(del.nodeVol - step)
             }
         }
     }

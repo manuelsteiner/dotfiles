@@ -23,6 +23,7 @@ ShellRoot {
     property real volOsdValue: 0
     property bool volOsdMuted: false
     property bool volOsdVisible: false
+    property bool _suppressVolumeOsd: false
 
     Connections {
         target: Config.enableVolumeOsd ? (Pipewire.defaultAudioSink?.audio ?? null) : null
@@ -31,7 +32,7 @@ ShellRoot {
     }
 
     function showVolumeOsd() {
-        if (!Config.enableVolumeOsd || !root._osdReady) return
+        if (!Config.enableVolumeOsd || !root._osdReady || root._suppressVolumeOsd) return
         var sink = Pipewire.defaultAudioSink
         if (!sink || !sink.audio) return
         root.volOsdValue = sink.audio.volume
@@ -47,10 +48,26 @@ ShellRoot {
         onTriggered: root.volOsdVisible = false
     }
 
+    Timer {
+        id: volumePanelOsdSuppressionTimer
+        interval: 150
+        onTriggered: root._suppressVolumeOsd = false
+    }
+
+    function setPanelVolume(node, volume) {
+        if (!node?.audio) return
+        root._suppressVolumeOsd = true
+        root.volOsdVisible = false
+        volOsdHideTimer.stop()
+        node.audio.volume = Math.max(0, Math.min(1, volume))
+        volumePanelOsdSuppressionTimer.restart()
+    }
+
     // ── Microphone OSD state ──
     property real micOsdValue: 0
     property bool micOsdMuted: false
     property bool micOsdVisible: false
+    property bool _suppressMicOsd: false
 
     Connections {
         target: Config.enableMicrophoneOsd ? (Pipewire.defaultAudioSource?.audio ?? null) : null
@@ -59,7 +76,7 @@ ShellRoot {
     }
 
     function showMicOsd() {
-        if (!Config.enableMicrophoneOsd || !root._osdReady) return
+        if (!Config.enableMicrophoneOsd || !root._osdReady || root._suppressMicOsd) return
         var source = Pipewire.defaultAudioSource
         if (!source || !source.audio) return
         root.micOsdValue = source.audio.volume
@@ -73,6 +90,21 @@ ShellRoot {
         id: micOsdHideTimer
         interval: Config.osdDuration
         onTriggered: root.micOsdVisible = false
+    }
+
+    Timer {
+        id: micPanelOsdSuppressionTimer
+        interval: 150
+        onTriggered: root._suppressMicOsd = false
+    }
+
+    function setPanelMicVolume(node, volume) {
+        if (!node?.audio) return
+        root._suppressMicOsd = true
+        root.micOsdVisible = false
+        micOsdHideTimer.stop()
+        node.audio.volume = Math.max(0, Math.min(1, volume))
+        micPanelOsdSuppressionTimer.restart()
     }
 
     // ── Brightness OSD state ──
