@@ -54,6 +54,9 @@ Neovim sessions read the selected theme when they start. It also selects
 htop's Nord color layout while keeping your htop settings intact; restart htop
 after switching.
 
+An already-open Fish shell refreshes its colors, `LS_COLORS`, and FZF options
+at its next prompt after switching.
+
 OpenCode uses its built-in `system` theme, which follows the active Kitty ANSI
 palette. Himalaya likewise uses terminal colors. Obsidian is intentionally not
 managed by the switcher because its themes and CSS are vault-specific GUI state.
