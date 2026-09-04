@@ -20,7 +20,7 @@ image_path=$1
 [[ -r "$image_path" ]] || fail "not readable: $image_path"
 
 config_home=${XDG_CONFIG_HOME:-"$HOME/.config"}
-config_path=${VISUAL_PROOF_ARTEFACT_CONFIG:-"$config_home/visual-proof-artefact/r2.env"}
+config_path=${VISUAL_PROOF_ARTEFACT_CONFIG:-"$config_home/agent-visual-proof-artefact/r2.env"}
 
 [[ -f "$config_path" ]] || fail "missing configuration: $config_path"
 [[ ! -L "$config_path" ]] || fail "configuration must not be a symbolic link: $config_path"
