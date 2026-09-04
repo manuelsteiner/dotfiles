@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly COMMAND_NAME="${0##*/}"
+readonly MAX_FILE_SIZE_BYTES=$((20 * 1024 * 1024))
+readonly MAX_URL_TTL_SECONDS=604800
+
+fail() {
+    printf '%s\n' "$COMMAND_NAME: $*" >&2
+    exit 1
+}
+
+if (( $# != 1 )); then
+    fail "usage: $COMMAND_NAME IMAGE_PATH"
+fi
+
+image_path=$1
+[[ -f "$image_path" ]] || fail "not a regular file: $image_path"
+[[ -r "$image_path" ]] || fail "not readable: $image_path"
+
+config_home=${XDG_CONFIG_HOME:-"$HOME/.config"}
+config_path=${VISUAL_PROOF_ARTEFACT_CONFIG:-"$config_home/visual-proof-artefact/r2.env"}
+
+[[ -f "$config_path" ]] || fail "missing configuration: $config_path"
+[[ ! -L "$config_path" ]] || fail "configuration must not be a symbolic link: $config_path"
+[[ -O "$config_path" ]] || fail "configuration is not owned by the current user: $config_path"
+[[ $(stat -c '%a' "$config_path") == "600" ]] || fail "configuration must have mode 600: $config_path"
+
+# The local-only file contains shell assignments. It is never committed or
+# exported to the caller's environment.
+# shellcheck disable=SC1090
+source "$config_path"
+
+: "${R2_ARTEFACT_ACCESS_KEY_ID:?R2_ARTEFACT_ACCESS_KEY_ID is required}"
+: "${R2_ARTEFACT_SECRET_ACCESS_KEY:?R2_ARTEFACT_SECRET_ACCESS_KEY is required}"
+: "${R2_ARTEFACT_ENDPOINT:?R2_ARTEFACT_ENDPOINT is required}"
+: "${R2_ARTEFACT_BUCKET:?R2_ARTEFACT_BUCKET is required}"
+: "${R2_ARTEFACT_URL_TTL_SECONDS:?R2_ARTEFACT_URL_TTL_SECONDS is required}"
+
+command -v aws >/dev/null 2>&1 || fail "aws-cli-v2 is required"
+command -v file >/dev/null 2>&1 || fail "file is required"
+
+endpoint=${R2_ARTEFACT_ENDPOINT%/}
+[[ "$endpoint" == https://* ]] || fail "R2_ARTEFACT_ENDPOINT must start with https://"
+[[ "$R2_ARTEFACT_BUCKET" =~ ^[a-z0-9][a-z0-9.-]*$ ]] || fail "R2_ARTEFACT_BUCKET is invalid"
+[[ "$R2_ARTEFACT_URL_TTL_SECONDS" =~ ^[1-9][0-9]*$ ]] || fail "R2_ARTEFACT_URL_TTL_SECONDS must be a positive integer"
+(( R2_ARTEFACT_URL_TTL_SECONDS <= MAX_URL_TTL_SECONDS )) || fail "R2_ARTEFACT_URL_TTL_SECONDS must not exceed $MAX_URL_TTL_SECONDS"
+
+file_size=$(stat -c '%s' "$image_path")
+(( file_size <= MAX_FILE_SIZE_BYTES )) || fail "image exceeds the 20 MiB limit"
+
+mime_type=$(file --brief --mime-type -- "$image_path")
+case "$mime_type" in
+    image/png) extension=png ;;
+    image/jpeg) extension=jpg ;;
+    image/webp) extension=webp ;;
+    image/gif) extension=gif ;;
+    image/avif) extension=avif ;;
+    *) fail "unsupported image type: $mime_type" ;;
+esac
+
+random_id=$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')
+object_key="visual-proof-artefacts/$(date -u +%Y/%m/%d)/$random_id.$extension"
+object_uri="s3://$R2_ARTEFACT_BUCKET/$object_key"
+
+aws_env=(
+    AWS_ACCESS_KEY_ID="$R2_ARTEFACT_ACCESS_KEY_ID"
+    AWS_SECRET_ACCESS_KEY="$R2_ARTEFACT_SECRET_ACCESS_KEY"
+    AWS_DEFAULT_REGION=auto
+    AWS_EC2_METADATA_DISABLED=true
+)
+
+env "${aws_env[@]}" aws s3 cp \
+    --endpoint-url "$endpoint" \
+    --only-show-errors \
+    --no-progress \
+    --content-type "$mime_type" \
+    "$image_path" "$object_uri"
+
+url=$(env "${aws_env[@]}" aws s3 presign \
+    --endpoint-url "$endpoint" \
+    --expires-in "$R2_ARTEFACT_URL_TTL_SECONDS" \
+    "$object_uri")
+
+[[ "$url" == https://* ]] || fail "R2 did not return an HTTPS presigned URL"
+printf '%s\n' "$url"

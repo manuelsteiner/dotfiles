@@ -35,9 +35,36 @@ These files deliberately stay outside chezmoi:
 - `~/.config/himalaya/config.local.toml` for the Proton email address, display
   name, Bridge username, and credential. Fish sets `HIMALAYA_CONFIG` to merge
   it over the managed config.
+- `~/.config/visual-proof-artefact/r2.env` for credentials and settings used by
+  `share-verification-artefact`. Create it manually with mode `0600`; it must
+  never enter this repository.
 - `~/.local/state/dotfiles-theme/current` for the selected desktop and terminal
   theme. Theme definitions and `theme-set` are managed, but the selection is
   deliberately local.
+
+## Visual proof artefacts
+
+`share-verification-artefact` uploads one local image to a private Cloudflare
+R2 bucket and writes a presigned HTTPS read URL to standard output. Install
+`aws-cli-v2` and create `~/.config/visual-proof-artefact/r2.env`:
+
+```sh
+R2_ARTEFACT_ACCESS_KEY_ID='your-r2-access-key-id'
+R2_ARTEFACT_SECRET_ACCESS_KEY='your-r2-secret-access-key'
+R2_ARTEFACT_ENDPOINT='https://your-account-id.r2.cloudflarestorage.com'
+R2_ARTEFACT_BUCKET='your-bucket-name'
+R2_ARTEFACT_URL_TTL_SECONDS='86400'
+```
+
+Secure it after writing it:
+
+```sh
+chmod 600 ~/.config/visual-proof-artefact/r2.env
+```
+
+Create an R2 API token with Object Read & Write permission restricted to this
+bucket. The bucket lifecycle rule deletes the uploaded artefacts after seven
+days. The signed URL lasts one day by default.
 
 ## Themes
 
