@@ -33,4 +33,6 @@ lsp-containers
 .config/systemd/user/geoclue-agent.service
 .config/systemd/user/protonmail-bridge.service
 .config/systemd/user/ssh-agent.service
+.config/environment.d/80-local-bin.conf
+.local/bin/share-verification-artefact
 {{ end }}
