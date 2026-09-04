@@ -14,17 +14,19 @@ Scope {
             property real submenuY: 0
             property real menuOpacity: 0
             readonly property int menuWidth: 184
+            readonly property real menuTop: Math.max(0, root.trayMenuY - 18)
+            readonly property real availableHeight: Math.max(64, screen.height - menuTop - 8)
             screen: modelData
             visible: root.trayMenuVisible && root.trayMenuHandle !== null
             WlrLayershell.namespace: "qs-traymenu"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
             WlrLayershell.margins.left: Config.effectiveBarWidth + Config.barGap
-            WlrLayershell.margins.top: Math.max(0, root.trayMenuY - 18)
+            WlrLayershell.margins.top: menuTop
             anchors { top: true; left: true }
             implicitWidth: menuWidth * 2 + 4
-            implicitHeight: Math.max(menuFrame.height,
-                submenuHandle !== null ? submenuFrame.y + submenuFrame.height : 0)
+            implicitHeight: Math.min(availableHeight, Math.max(menuFrame.height,
+                submenuHandle !== null ? submenuFrame.y + submenuFrame.height : 0))
             color: "transparent"
 
             onVisibleChanged: {
@@ -88,7 +90,7 @@ Scope {
                 anchors.left: parent.left
                 y: 0
                 width: menuWindow.menuWidth
-                height: mainMenu.implicitHeight + 16
+                height: Math.min(mainMenu.implicitHeight + 16, menuWindow.availableHeight)
                 radius: 8
                 color: Theme.surface
                 border.color: Theme.overlay
@@ -100,25 +102,73 @@ Scope {
                     }
                 }
 
-                ColumnLayout {
-                    id: mainMenu
+                Flickable {
+                    id: mainMenuView
                     anchors.fill: parent
                     anchors.margins: 8
-                    spacing: 2
+                    contentWidth: width
+                    contentHeight: mainMenu.implicitHeight
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
 
-                    Repeater {
-                        model: rootMenuOpener.children
+                    ColumnLayout {
+                        id: mainMenu
+                        width: mainMenuView.width
+                        spacing: 2
 
-                        delegate: MenuRow {
-                            id: mainRow
-                            required property var modelData
-                            required property int index
-                            Layout.fillWidth: true
-                            Layout.minimumWidth: 160
-                            entry: modelData
-                            leadingItem: index === 0
-                            onSubmenuRequested: menuWindow.openSubmenu(entry, mainRow.mapToItem(menuFrame, 0, 0).y)
-                            onSubmenuCleared: menuWindow.closeSubmenu()
+                        Repeater {
+                            model: rootMenuOpener.children
+
+                            delegate: MenuRow {
+                                id: mainRow
+                                required property var modelData
+                                required property int index
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 160
+                                entry: modelData
+                                leadingItem: index === 0
+                                onSubmenuRequested: menuWindow.openSubmenu(entry, mainRow.mapToItem(menuFrame, 0, 0).y)
+                                onSubmenuCleared: menuWindow.closeSubmenu()
+                            }
+                        }
+                    }
+                }
+
+                Item {
+                    id: mainScrollThumb
+                    visible: mainMenuView.contentHeight > mainMenuView.height
+                    width: 12
+                    height: Math.max(20, mainMenuView.height * mainMenuView.height / mainMenuView.contentHeight)
+                    anchors.right: parent.right
+                    anchors.rightMargin: 0
+                    y: 8 + (mainMenuView.height - height)
+                        * mainMenuView.contentY / Math.max(1, mainMenuView.contentHeight - mainMenuView.height)
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 3
+                        height: parent.height
+                        radius: width / 2
+                        color: Theme.muted
+                    }
+
+                    MouseArea {
+                        property real pressY: 0
+                        property real contentAtPress: 0
+                        anchors.fill: parent
+                        cursorShape: Qt.SizeVerCursor
+                        preventStealing: true
+                        onPressed: mouse => {
+                            pressY = mouse.y
+                            contentAtPress = mainMenuView.contentY
+                            mouse.accepted = true
+                        }
+                        onPositionChanged: mouse => {
+                            if (!pressed) return
+                            var scrollRange = mainMenuView.contentHeight - mainMenuView.height
+                            var trackRange = mainMenuView.height - mainScrollThumb.height
+                            mainMenuView.contentY = Math.max(0, Math.min(scrollRange,
+                                contentAtPress + (mouse.y - pressY) * scrollRange / Math.max(1, trackRange)))
                         }
                     }
                 }
@@ -131,9 +181,10 @@ Scope {
                 opacity: menuWindow.submenuHandle !== null ? 1 : 0
                 anchors.left: menuFrame.right
                 anchors.leftMargin: 4
-                y: menuWindow.submenuY
+                y: Math.min(menuWindow.submenuY,
+                    Math.max(0, menuWindow.availableHeight - height))
                 width: menuWindow.menuWidth
-                height: subMenu.implicitHeight + 16
+                height: Math.min(subMenu.implicitHeight + 16, menuWindow.availableHeight)
                 radius: 8
                 color: Theme.surface
                 border.color: Theme.overlay
@@ -145,25 +196,73 @@ Scope {
                     }
                 }
 
-                ColumnLayout {
-                    id: subMenu
+                Flickable {
+                    id: subMenuView
                     anchors.fill: parent
                     anchors.margins: 8
-                    spacing: 2
+                    contentWidth: width
+                    contentHeight: subMenu.implicitHeight
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
 
-                    Repeater {
-                        model: submenuOpener.children
+                    ColumnLayout {
+                        id: subMenu
+                        width: subMenuView.width
+                        spacing: 2
 
-                        delegate: MenuRow {
-                            id: subRow
-                            required property var modelData
-                            required property int index
-                            Layout.fillWidth: true
-                            Layout.minimumWidth: 160
-                            entry: modelData
-                            interactionEnabled: menuWindow.submenuHandle !== null
-                            leadingItem: index === 0
-                            onSubmenuRequested: menuWindow.openSubmenu(entry, subRow.mapToItem(menuFrame, 0, 0).y)
+                        Repeater {
+                            model: submenuOpener.children
+
+                            delegate: MenuRow {
+                                id: subRow
+                                required property var modelData
+                                required property int index
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 160
+                                entry: modelData
+                                interactionEnabled: menuWindow.submenuHandle !== null
+                                leadingItem: index === 0
+                                onSubmenuRequested: menuWindow.openSubmenu(entry, subRow.mapToItem(menuFrame, 0, 0).y)
+                            }
+                        }
+                    }
+                }
+
+                Item {
+                    id: subScrollThumb
+                    visible: subMenuView.contentHeight > subMenuView.height
+                    width: 12
+                    height: Math.max(20, subMenuView.height * subMenuView.height / subMenuView.contentHeight)
+                    anchors.right: parent.right
+                    anchors.rightMargin: 0
+                    y: 8 + (subMenuView.height - height)
+                        * subMenuView.contentY / Math.max(1, subMenuView.contentHeight - subMenuView.height)
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 3
+                        height: parent.height
+                        radius: width / 2
+                        color: Theme.muted
+                    }
+
+                    MouseArea {
+                        property real pressY: 0
+                        property real contentAtPress: 0
+                        anchors.fill: parent
+                        cursorShape: Qt.SizeVerCursor
+                        preventStealing: true
+                        onPressed: mouse => {
+                            pressY = mouse.y
+                            contentAtPress = subMenuView.contentY
+                            mouse.accepted = true
+                        }
+                        onPositionChanged: mouse => {
+                            if (!pressed) return
+                            var scrollRange = subMenuView.contentHeight - subMenuView.height
+                            var trackRange = subMenuView.height - subScrollThumb.height
+                            subMenuView.contentY = Math.max(0, Math.min(scrollRange,
+                                contentAtPress + (mouse.y - pressY) * scrollRange / Math.max(1, trackRange)))
                         }
                     }
                 }
