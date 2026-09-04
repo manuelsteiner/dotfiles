@@ -163,41 +163,14 @@ Scope {
 
             Rectangle {
                 id: volumeSlider
-                z: 1
                 width: parent.width; height: 5; radius: 2.5
-                color: sliderMouse.containsMouse || sliderMouse.pressed
-                    ? Theme.highlightHigh : Theme.highlightMed
+                color: ma.containsMouse ? Theme.highlightHigh : Theme.highlightMed
                 Rectangle {
                     width: parent.width * Math.min(del.nodeVol, 1.0)
                     height: parent.height; radius: parent.radius
                     color: del.isDefault ? Theme.microphoneColor
                         : del.nodeMuted ? Theme.muted : Theme.subtle
                     Behavior on width { NumberAnimation { duration: 80 } }
-                }
-
-                MouseArea {
-                    id: sliderMouse
-                    z: 1
-                    anchors.fill: parent
-                    anchors.topMargin: -6
-                    anchors.bottomMargin: -6
-                    hoverEnabled: true
-                    preventStealing: true
-                    cursorShape: Qt.PointingHandCursor
-                    function setFromPosition(position) {
-                        del.setVolume(position / width)
-                    }
-                    onPressed: mouse => setFromPosition(mouse.x)
-                    onPositionChanged: mouse => {
-                        if (pressed) setFromPosition(mouse.x)
-                    }
-                    onWheel: wheel => {
-                        var step = 0.05
-                        if (wheel.angleDelta.y > 0)
-                            del.setVolume(del.nodeVol + step)
-                        else if (wheel.angleDelta.y < 0)
-                            del.setVolume(del.nodeVol - step)
-                    }
                 }
             }
         }
@@ -207,7 +180,33 @@ Scope {
             anchors.fill: parent
             hoverEnabled: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
+            property bool adjustingVolume: false
+            property bool adjustedVolume: false
+            function isOverVolumeSlider(mouse) {
+                var sliderPos = volumeSlider.mapToItem(del, 0, 0)
+                return mouse.x >= sliderPos.x
+                    && mouse.x <= sliderPos.x + volumeSlider.width
+                    && mouse.y >= sliderPos.y - 6
+                    && mouse.y <= sliderPos.y + volumeSlider.height + 6
+            }
+            function setVolumeFromMouse(mouse) {
+                var sliderPos = volumeSlider.mapToItem(del, 0, 0)
+                del.setVolume((mouse.x - sliderPos.x) / volumeSlider.width)
+            }
+            onPressed: mouse => {
+                adjustedVolume = mouse.button === Qt.LeftButton && isOverVolumeSlider(mouse)
+                adjustingVolume = adjustedVolume
+                if (adjustingVolume) setVolumeFromMouse(mouse)
+            }
+            onPositionChanged: mouse => {
+                if (adjustingVolume && pressed) setVolumeFromMouse(mouse)
+            }
+            onReleased: adjustingVolume = false
             onClicked: mouse => {
+                if (adjustedVolume) {
+                    adjustedVolume = false
+                    return
+                }
                 if (mouse.button === Qt.RightButton) {
                     if (del.node.audio)
                         del.node.audio.muted = !del.node.audio.muted
