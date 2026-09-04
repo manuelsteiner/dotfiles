@@ -44,7 +44,7 @@ source "$config_path"
 : "${R2_ARTEFACT_BUCKET:?R2_ARTEFACT_BUCKET is required}"
 : "${R2_ARTEFACT_URL_TTL_SECONDS:?R2_ARTEFACT_URL_TTL_SECONDS is required}"
 
-command -v mc >/dev/null 2>&1 || fail "minio-client is required"
+command -v mcli >/dev/null 2>&1 || fail "minio-client is required"
 command -v file >/dev/null 2>&1 || fail "file is required"
 
 endpoint=${R2_ARTEFACT_ENDPOINT%/}
@@ -97,18 +97,18 @@ mc_env=(
 )
 object_path="agentartefact/$R2_ARTEFACT_BUCKET/$object_key"
 
-env "${mc_env[@]}" mc cp \
+env "${mc_env[@]}" mcli cp \
     --attr "Content-Type=$mime_type" \
     "$image_path" "$object_path" >/dev/null
 
-if ! share_output=$(env "${mc_env[@]}" mc share download \
+if ! share_output=$(env "${mc_env[@]}" mcli --json share download \
     --expire "${R2_ARTEFACT_URL_TTL_SECONDS}s" \
     "$object_path"); then
     printf '%s\n' "$share_output" >&2
     exit 1
 fi
 
-if [[ "$share_output" =~ (https://[^[:space:]]+) ]]; then
+if [[ "$share_output" =~ \"share\":\"(https://[^\"]+)\" ]]; then
     url=${BASH_REMATCH[1]}
 else
     fail "MinIO Client did not return an HTTPS presigned URL"
