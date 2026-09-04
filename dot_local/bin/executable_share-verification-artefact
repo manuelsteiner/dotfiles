@@ -21,8 +21,14 @@ image_path=$1
 
 config_home=${XDG_CONFIG_HOME:-"$HOME/.config"}
 config_path=${VISUAL_PROOF_ARTEFACT_CONFIG:-"$config_home/agent-visual-proof-artefact/r2.env"}
+config_directory=$(dirname "$config_path")
 
-[[ -f "$config_path" ]] || fail "missing configuration: $config_path"
+[[ ! -e "$config_directory" || -d "$config_directory" ]] || fail "configuration directory is not a directory: $config_directory"
+if [[ ! -d "$config_directory" ]]; then
+    mkdir -p -m 700 -- "$config_directory"
+fi
+
+[[ -f "$config_path" ]] || fail "missing configuration: $config_path; create it with mode 600"
 [[ ! -L "$config_path" ]] || fail "configuration must not be a symbolic link: $config_path"
 [[ -O "$config_path" ]] || fail "configuration is not owned by the current user: $config_path"
 [[ $(stat -c '%a' "$config_path") == "600" ]] || fail "configuration must have mode 600: $config_path"
@@ -38,7 +44,7 @@ source "$config_path"
 : "${R2_ARTEFACT_BUCKET:?R2_ARTEFACT_BUCKET is required}"
 : "${R2_ARTEFACT_URL_TTL_SECONDS:?R2_ARTEFACT_URL_TTL_SECONDS is required}"
 
-command -v aws >/dev/null 2>&1 || fail "aws-cli-v2 is required"
+command -v mc >/dev/null 2>&1 || fail "minio-client is required"
 command -v file >/dev/null 2>&1 || fail "file is required"
 
 endpoint=${R2_ARTEFACT_ENDPOINT%/}
@@ -62,26 +68,51 @@ esac
 
 random_id=$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')
 object_key="visual-proof-artefacts/$(date -u +%Y/%m/%d)/$random_id.$extension"
-object_uri="s3://$R2_ARTEFACT_BUCKET/$object_key"
+url_encode() {
+    local input=$1
+    local output=""
+    local character
+    local code
+    local index
 
-aws_env=(
-    AWS_ACCESS_KEY_ID="$R2_ARTEFACT_ACCESS_KEY_ID"
-    AWS_SECRET_ACCESS_KEY="$R2_ARTEFACT_SECRET_ACCESS_KEY"
-    AWS_DEFAULT_REGION=auto
-    AWS_EC2_METADATA_DISABLED=true
+    for ((index = 0; index < ${#input}; index++)); do
+        character=${input:index:1}
+        case "$character" in
+            [a-zA-Z0-9.~_-]) output+=$character ;;
+            *) printf -v code '%%%02X' "'$character"; output+=$code ;;
+        esac
+    done
+
+    printf '%s' "$output"
+}
+
+temporary_config_directory=$(mktemp -d)
+trap 'rm -rf -- "$temporary_config_directory"' EXIT
+
+endpoint_host=${endpoint#https://}
+mc_host="https://$(url_encode "$R2_ARTEFACT_ACCESS_KEY_ID"):$(url_encode "$R2_ARTEFACT_SECRET_ACCESS_KEY")@$endpoint_host"
+mc_env=(
+    MC_CONFIG_DIR="$temporary_config_directory"
+    MC_HOST_agentartefact="$mc_host"
 )
+object_path="agentartefact/$R2_ARTEFACT_BUCKET/$object_key"
 
-env "${aws_env[@]}" aws s3 cp \
-    --endpoint-url "$endpoint" \
-    --only-show-errors \
-    --no-progress \
-    --content-type "$mime_type" \
-    "$image_path" "$object_uri"
+env "${mc_env[@]}" mc cp \
+    --attr "Content-Type=$mime_type" \
+    "$image_path" "$object_path" >/dev/null
 
-url=$(env "${aws_env[@]}" aws s3 presign \
-    --endpoint-url "$endpoint" \
-    --expires-in "$R2_ARTEFACT_URL_TTL_SECONDS" \
-    "$object_uri")
+if ! share_output=$(env "${mc_env[@]}" mc share download \
+    --expire "${R2_ARTEFACT_URL_TTL_SECONDS}s" \
+    "$object_path"); then
+    printf '%s\n' "$share_output" >&2
+    exit 1
+fi
+
+if [[ "$share_output" =~ (https://[^[:space:]]+) ]]; then
+    url=${BASH_REMATCH[1]}
+else
+    fail "MinIO Client did not return an HTTPS presigned URL"
+fi
 
 [[ "$url" == https://* ]] || fail "R2 did not return an HTTPS presigned URL"
 printf '%s\n' "$url"

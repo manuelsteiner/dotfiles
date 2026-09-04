@@ -46,7 +46,7 @@ These files deliberately stay outside chezmoi:
 
 `share-verification-artefact` uploads one local image to a private Cloudflare
 R2 bucket and writes a presigned HTTPS read URL to standard output. Install
-`aws-cli-v2` and create `~/.config/agent-visual-proof-artefact/r2.env`:
+`minio-client` and create `~/.config/agent-visual-proof-artefact/r2.env`:
 
 ```sh
 R2_ARTEFACT_ACCESS_KEY_ID='your-r2-access-key-id'
