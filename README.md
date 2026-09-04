@@ -53,7 +53,7 @@ R2_ARTEFACT_ACCESS_KEY_ID='your-r2-access-key-id'
 R2_ARTEFACT_SECRET_ACCESS_KEY='your-r2-secret-access-key'
 R2_ARTEFACT_ENDPOINT='https://your-account-id.r2.cloudflarestorage.com'
 R2_ARTEFACT_BUCKET='your-bucket-name'
-R2_ARTEFACT_URL_TTL_SECONDS='86400'
+R2_ARTEFACT_URL_TTL_SECONDS='604800'
 ```
 
 Secure it after writing it:
