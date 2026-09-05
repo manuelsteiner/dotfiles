@@ -62,9 +62,11 @@ Secure it after writing it:
 chmod 600 ~/.config/agent-artefact/r2.env
 ```
 
+Set `AGENT_ARTEFACT_CONFIG` to use an `r2.env` file at another location.
+
 Create an R2 API token with Object Read & Write permission restricted to this
 bucket. The bucket lifecycle rule deletes the uploaded artefacts after seven
-days. The signed URL lasts one day by default.
+days. The signed URL lasts seven days by default.
 
 ## Themes
 

@@ -20,7 +20,7 @@ image_path=$1
 [[ -r "$image_path" ]] || fail "not readable: $image_path"
 
 config_home=${XDG_CONFIG_HOME:-"$HOME/.config"}
-config_path=${VISUAL_PROOF_ARTEFACT_CONFIG:-"$config_home/agent-artefact/r2.env"}
+config_path=${AGENT_ARTEFACT_CONFIG:-"$config_home/agent-artefact/r2.env"}
 config_directory=$(dirname "$config_path")
 
 [[ ! -e "$config_directory" || -d "$config_directory" ]] || fail "configuration directory is not a directory: $config_directory"
