@@ -44,11 +44,11 @@ These files deliberately stay outside chezmoi:
 
 ## Agent artefacts
 
-`share-verification-artefact` uploads one local file up to 20 MiB to a private
+`share-agent-artefact` uploads one local file up to 20 MiB to a private
 Cloudflare R2 bucket and writes a presigned HTTPS read URL to standard output.
 It preserves a safe filename extension when available and sets the detected
-MIME type. Install
-`minio-client` and create `~/.config/agent-artefact/r2.env`:
+MIME type. `share-verification-artefact` remains as a compatibility wrapper.
+Install `minio-client` and create `~/.config/agent-artefact/r2.env`:
 
 ```sh
 R2_ARTEFACT_ACCESS_KEY_ID='your-r2-access-key-id'

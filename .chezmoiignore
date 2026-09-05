@@ -34,5 +34,6 @@ lsp-containers
 .config/systemd/user/protonmail-bridge.service
 .config/systemd/user/ssh-agent.service
 .config/environment.d/80-local-bin.conf
+.local/bin/share-agent-artefact
 .local/bin/share-verification-artefact
 {{ end }}

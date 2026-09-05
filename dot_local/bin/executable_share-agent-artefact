@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly COMMAND_NAME="${0##*/}"
+readonly MAX_FILE_SIZE_BYTES=$((20 * 1024 * 1024))
+readonly MAX_URL_TTL_SECONDS=604800
+
+fail() {
+    printf '%s\n' "$COMMAND_NAME: $*" >&2
+    exit 1
+}
+
+if (( $# != 1 )); then
+    fail "usage: $COMMAND_NAME FILE_PATH"
+fi
+
+artefact_path=$1
+[[ -f "$artefact_path" ]] || fail "not a regular file: $artefact_path"
+[[ -r "$artefact_path" ]] || fail "not readable: $artefact_path"
+
+config_home=${XDG_CONFIG_HOME:-"$HOME/.config"}
+config_path=${AGENT_ARTEFACT_CONFIG:-"$config_home/agent-artefact/r2.env"}
+config_directory=$(dirname "$config_path")
+
+[[ ! -e "$config_directory" || -d "$config_directory" ]] || fail "configuration directory is not a directory: $config_directory"
+if [[ ! -d "$config_directory" ]]; then
+    mkdir -p -m 700 -- "$config_directory"
+fi
+
+[[ -f "$config_path" ]] || fail "missing configuration: $config_path; create it with mode 600"
+[[ ! -L "$config_path" ]] || fail "configuration must not be a symbolic link: $config_path"
+[[ -O "$config_path" ]] || fail "configuration is not owned by the current user: $config_path"
+[[ $(stat -c '%a' "$config_path") == "600" ]] || fail "configuration must have mode 600: $config_path"
+
+# The local-only file contains shell assignments. It is never committed or
+# exported to the caller's environment.
+# shellcheck disable=SC1090
+source "$config_path"
+
+: "${R2_ARTEFACT_ACCESS_KEY_ID:?R2_ARTEFACT_ACCESS_KEY_ID is required}"
+: "${R2_ARTEFACT_SECRET_ACCESS_KEY:?R2_ARTEFACT_SECRET_ACCESS_KEY is required}"
+: "${R2_ARTEFACT_ENDPOINT:?R2_ARTEFACT_ENDPOINT is required}"
+: "${R2_ARTEFACT_BUCKET:?R2_ARTEFACT_BUCKET is required}"
+: "${R2_ARTEFACT_URL_TTL_SECONDS:?R2_ARTEFACT_URL_TTL_SECONDS is required}"
+
+command -v mcli >/dev/null 2>&1 || fail "minio-client is required"
+command -v file >/dev/null 2>&1 || fail "file is required"
+
+endpoint=${R2_ARTEFACT_ENDPOINT%/}
+[[ "$endpoint" == https://* ]] || fail "R2_ARTEFACT_ENDPOINT must start with https://"
+[[ "$R2_ARTEFACT_BUCKET" =~ ^[a-z0-9][a-z0-9.-]*$ ]] || fail "R2_ARTEFACT_BUCKET is invalid"
+[[ "$R2_ARTEFACT_URL_TTL_SECONDS" =~ ^[1-9][0-9]*$ ]] || fail "R2_ARTEFACT_URL_TTL_SECONDS must be a positive integer"
+(( R2_ARTEFACT_URL_TTL_SECONDS <= MAX_URL_TTL_SECONDS )) || fail "R2_ARTEFACT_URL_TTL_SECONDS must not exceed $MAX_URL_TTL_SECONDS"
+
+file_size=$(stat -c '%s' "$artefact_path")
+(( file_size <= MAX_FILE_SIZE_BYTES )) || fail "file exceeds the 20 MiB limit"
+
+mime_type=$(file --brief --mime-type -- "$artefact_path")
+artefact_name=${artefact_path##*/}
+extension=bin
+if [[ "$artefact_name" == *.* && "$artefact_name" != .* ]]; then
+    candidate_extension=${artefact_name##*.}
+    if [[ "$candidate_extension" =~ ^[[:alnum:]]{1,16}$ ]]; then
+        extension=${candidate_extension,,}
+    fi
+fi
+
+random_id=$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')
+object_key="agent-artefacts/$(date -u +%Y/%m/%d)/$random_id.$extension"
+url_encode() {
+    local input=$1
+    local output=""
+    local character
+    local code
+    local index
+
+    for ((index = 0; index < ${#input}; index++)); do
+        character=${input:index:1}
+        case "$character" in
+            [a-zA-Z0-9.~_-]) output+=$character ;;
+            *) printf -v code '%%%02X' "'$character"; output+=$code ;;
+        esac
+    done
+
+    printf '%s' "$output"
+}
+
+temporary_config_directory=$(mktemp -d)
+trap 'rm -rf -- "$temporary_config_directory"' EXIT
+
+endpoint_host=${endpoint#https://}
+mc_host="https://$(url_encode "$R2_ARTEFACT_ACCESS_KEY_ID"):$(url_encode "$R2_ARTEFACT_SECRET_ACCESS_KEY")@$endpoint_host"
+mc_env=(
+    MC_CONFIG_DIR="$temporary_config_directory"
+    MC_HOST_agentartefact="$mc_host"
+)
+object_path="agentartefact/$R2_ARTEFACT_BUCKET/$object_key"
+
+env "${mc_env[@]}" mcli cp \
+    --attr "Content-Type=$mime_type" \
+    "$artefact_path" "$object_path" >/dev/null
+
+if ! share_output=$(env "${mc_env[@]}" mcli --json share download \
+    --expire "${R2_ARTEFACT_URL_TTL_SECONDS}s" \
+    "$object_path"); then
+    printf '%s\n' "$share_output" >&2
+    exit 1
+fi
+
+if [[ "$share_output" =~ \"share\":\"(https://[^\"]+)\" ]]; then
+    url=${BASH_REMATCH[1]}
+else
+    fail "MinIO Client did not return an HTTPS presigned URL"
+fi
+
+[[ "$url" == https://* ]] || fail "R2 did not return an HTTPS presigned URL"
+printf '%s\n' "$url"
