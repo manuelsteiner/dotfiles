@@ -42,7 +42,7 @@ These files deliberately stay outside chezmoi:
   theme. Theme definitions and `theme-set` are managed, but the selection is
   deliberately local.
 
-## Visual proof artefacts
+## Agent artefacts
 
 `share-verification-artefact` uploads one local image to a private Cloudflare
 R2 bucket and writes a presigned HTTPS read URL to standard output. Install
