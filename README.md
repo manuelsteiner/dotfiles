@@ -35,7 +35,7 @@ These files deliberately stay outside chezmoi:
 - `~/.config/himalaya/config.local.toml` for the Proton email address, display
   name, Bridge username, and credential. Fish sets `HIMALAYA_CONFIG` to merge
   it over the managed config.
-- `~/.config/agent-visual-proof-artefact/r2.env` for credentials and settings
+- `~/.config/agent-artefact/r2.env` for credentials and settings
   used by `share-verification-artefact`. Create it manually with mode `0600`;
   it must never enter this repository.
 - `~/.local/state/dotfiles-theme/current` for the selected desktop and terminal
@@ -46,7 +46,7 @@ These files deliberately stay outside chezmoi:
 
 `share-verification-artefact` uploads one local image to a private Cloudflare
 R2 bucket and writes a presigned HTTPS read URL to standard output. Install
-`minio-client` and create `~/.config/agent-visual-proof-artefact/r2.env`:
+`minio-client` and create `~/.config/agent-artefact/r2.env`:
 
 ```sh
 R2_ARTEFACT_ACCESS_KEY_ID='your-r2-access-key-id'
@@ -59,7 +59,7 @@ R2_ARTEFACT_URL_TTL_SECONDS='604800'
 Secure it after writing it:
 
 ```sh
-chmod 600 ~/.config/agent-visual-proof-artefact/r2.env
+chmod 600 ~/.config/agent-artefact/r2.env
 ```
 
 Create an R2 API token with Object Read & Write permission restricted to this
