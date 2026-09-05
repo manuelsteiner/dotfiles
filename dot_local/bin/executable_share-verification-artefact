@@ -12,12 +12,12 @@ fail() {
 }
 
 if (( $# != 1 )); then
-    fail "usage: $COMMAND_NAME IMAGE_PATH"
+    fail "usage: $COMMAND_NAME FILE_PATH"
 fi
 
-image_path=$1
-[[ -f "$image_path" ]] || fail "not a regular file: $image_path"
-[[ -r "$image_path" ]] || fail "not readable: $image_path"
+artefact_path=$1
+[[ -f "$artefact_path" ]] || fail "not a regular file: $artefact_path"
+[[ -r "$artefact_path" ]] || fail "not readable: $artefact_path"
 
 config_home=${XDG_CONFIG_HOME:-"$HOME/.config"}
 config_path=${AGENT_ARTEFACT_CONFIG:-"$config_home/agent-artefact/r2.env"}
@@ -53,21 +53,21 @@ endpoint=${R2_ARTEFACT_ENDPOINT%/}
 [[ "$R2_ARTEFACT_URL_TTL_SECONDS" =~ ^[1-9][0-9]*$ ]] || fail "R2_ARTEFACT_URL_TTL_SECONDS must be a positive integer"
 (( R2_ARTEFACT_URL_TTL_SECONDS <= MAX_URL_TTL_SECONDS )) || fail "R2_ARTEFACT_URL_TTL_SECONDS must not exceed $MAX_URL_TTL_SECONDS"
 
-file_size=$(stat -c '%s' "$image_path")
-(( file_size <= MAX_FILE_SIZE_BYTES )) || fail "image exceeds the 20 MiB limit"
+file_size=$(stat -c '%s' "$artefact_path")
+(( file_size <= MAX_FILE_SIZE_BYTES )) || fail "file exceeds the 20 MiB limit"
 
-mime_type=$(file --brief --mime-type -- "$image_path")
-case "$mime_type" in
-    image/png) extension=png ;;
-    image/jpeg) extension=jpg ;;
-    image/webp) extension=webp ;;
-    image/gif) extension=gif ;;
-    image/avif) extension=avif ;;
-    *) fail "unsupported image type: $mime_type" ;;
-esac
+mime_type=$(file --brief --mime-type -- "$artefact_path")
+artefact_name=${artefact_path##*/}
+extension=bin
+if [[ "$artefact_name" == *.* && "$artefact_name" != .* ]]; then
+    candidate_extension=${artefact_name##*.}
+    if [[ "$candidate_extension" =~ ^[[:alnum:]]{1,16}$ ]]; then
+        extension=${candidate_extension,,}
+    fi
+fi
 
 random_id=$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')
-object_key="visual-proof-artefacts/$(date -u +%Y/%m/%d)/$random_id.$extension"
+object_key="agent-artefacts/$(date -u +%Y/%m/%d)/$random_id.$extension"
 url_encode() {
     local input=$1
     local output=""
@@ -99,7 +99,7 @@ object_path="agentartefact/$R2_ARTEFACT_BUCKET/$object_key"
 
 env "${mc_env[@]}" mcli cp \
     --attr "Content-Type=$mime_type" \
-    "$image_path" "$object_path" >/dev/null
+    "$artefact_path" "$object_path" >/dev/null
 
 if ! share_output=$(env "${mc_env[@]}" mcli --json share download \
     --expire "${R2_ARTEFACT_URL_TTL_SECONDS}s" \
