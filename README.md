@@ -138,7 +138,9 @@ value files exist only in chezmoi and are not deployed to Quickshell.
 
 The work role ignores private desktop files, including Hyprland, Quickshell,
 Fuzzel, Darkman, GTK preferences, MIME associations, Himalaya, and the private
-user units.
+user units. Chezmoi also renders `~/.config/theme/profile.conf` from `.role`.
+`theme-set` uses it to skip Quickshell, Hyprland, and Hyprlock links and reloads
+on work machines while keeping terminal theming shared.
 
 ## Hyprland displays and wallpaper
 

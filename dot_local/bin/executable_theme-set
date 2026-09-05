@@ -4,6 +4,17 @@ set -euo pipefail
 config_dir="${XDG_CONFIG_HOME:-$HOME/.config}"
 state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles-theme"
 themes_dir="$config_dir/theme/themes"
+profile="$config_dir/theme/profile.conf"
+
+test -r "$profile" || {
+    printf 'theme-set: missing %s; run chezmoi apply\n' "$profile" >&2
+    exit 1
+}
+source "$profile"
+case "${theme_role:-}" in
+    private|work) ;;
+    *) printf 'theme-set: invalid theme role in %s\n' "$profile" >&2; exit 1 ;;
+esac
 
 list_themes() {
     find "$themes_dir" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort
@@ -310,16 +321,17 @@ rgb() {
 }
 
 reload_apps() {
-    command -v hyprctl >/dev/null 2>&1 && hyprctl reload >/dev/null 2>&1 || true
     command -v kitty >/dev/null 2>&1 && pkill -USR1 -x kitty >/dev/null 2>&1 || true
-    if pgrep -x quickshell >/dev/null 2>&1; then
-        pkill -x quickshell
-        for _ in {1..20}; do
-            pgrep -x quickshell >/dev/null 2>&1 || break
-            sleep 0.1
-        done
-        command -v quickshell >/dev/null 2>&1 && quickshell --path "$config_dir/quickshell" --daemonize --no-duplicate --no-color
-    fi
+    [[ "$theme_role" == private ]] || return 0
+
+    command -v hyprctl >/dev/null 2>&1 && hyprctl reload >/dev/null 2>&1 || true
+    pgrep -x quickshell >/dev/null 2>&1 || return 0
+    pkill -x quickshell
+    for _ in {1..20}; do
+        pgrep -x quickshell >/dev/null 2>&1 || break
+        sleep 0.1
+    done
+    command -v quickshell >/dev/null 2>&1 && quickshell --path "$config_dir/quickshell" --daemonize --no-duplicate --no-color
 }
 
 update_htop() {
@@ -365,11 +377,14 @@ mv "$tmp_dir" "$state_dir/$theme"
 ln -sfnT "$state_dir/$theme" "$state_dir/current"
 trap - EXIT
 
-mkdir -p "$config_dir/quickshell" "$config_dir/bat" "$config_dir/eza" "$config_dir/hypr/colors"
-ln -sfnT "$state_dir/current/quickshell/Theme.qml" "$config_dir/quickshell/Theme.qml"
+mkdir -p "$config_dir/bat" "$config_dir/eza"
 ln -sfnT "$state_dir/current/bat.conf" "$config_dir/bat/config"
 ln -sfnT "$state_dir/current/eza.yml" "$config_dir/eza/theme.yml"
-ln -sfnT "$state_dir/current/hyprlock.conf" "$config_dir/hypr/colors/current.conf"
+if [[ "$theme_role" == private ]]; then
+    mkdir -p "$config_dir/quickshell" "$config_dir/hypr/colors"
+    ln -sfnT "$state_dir/current/quickshell/Theme.qml" "$config_dir/quickshell/Theme.qml"
+    ln -sfnT "$state_dir/current/hyprlock.conf" "$config_dir/hypr/colors/current.conf"
+fi
 
 printf '%s\n' "$theme" > "$state_dir/current.name"
 update_htop
