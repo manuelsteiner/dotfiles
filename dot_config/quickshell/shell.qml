@@ -263,7 +263,9 @@ ShellRoot {
 
     // ── Notification state ──
     property bool dndEnabled: false
-    property var activeNotifications: []
+    // The toast area defaults to one notification. The panel remains the
+    // complete notification history.
+    property var toastNotifications: []
     property var storedNotifications: []
     property bool notifPanelVisible: false
 
@@ -330,7 +332,7 @@ ShellRoot {
 
             // Clean up when notification is closed externally (by app, system, etc.)
             notification.closed.connect(function() {
-                root.activeNotifications = root.activeNotifications.filter(n => n !== notification)
+                root.toastNotifications = root.toastNotifications.filter(n => n !== notification)
                 root.storedNotifications = root.storedNotifications.filter(n => n !== notification)
             })
 
@@ -350,25 +352,24 @@ ShellRoot {
             root.storedNotifications = stored
 
             // Show toast unless suppressed (manual DND or fullscreen)
-            if (!root.notifSuppressed) {
-                var list = root.activeNotifications.slice()
-                list.unshift(notification)
-                if (list.length > 4) list = list.slice(0, 4)
-                root.activeNotifications = list
+            if (!root.notifSuppressed && stored.indexOf(notification) !== -1) {
+                var toasts = root.toastNotifications.filter(n => n !== notification)
+                toasts.unshift(notification)
+                root.toastNotifications = toasts.slice(0, Math.max(0, Config.maxLiveNotificationToasts))
             }
         }
     }
 
     // Toast expired by timer – remove from toasts but keep in stored
     function expireToast(notification) {
-        root.activeNotifications = root.activeNotifications.filter(n => n !== notification)
+        root.toastNotifications = root.toastNotifications.filter(n => n !== notification)
     }
 
     // User explicitly dismissed a toast – remove from both
     function dismissNotification(notification) {
         notification.tracked = false
         notification.dismiss()
-        root.activeNotifications = root.activeNotifications.filter(n => n !== notification)
+        root.toastNotifications = root.toastNotifications.filter(n => n !== notification)
         root.storedNotifications = root.storedNotifications.filter(n => n !== notification)
     }
 
@@ -376,24 +377,24 @@ ShellRoot {
     function dismissStoredNotification(notification) {
         notification.tracked = false
         notification.dismiss()
-        root.activeNotifications = root.activeNotifications.filter(n => n !== notification)
+        root.toastNotifications = root.toastNotifications.filter(n => n !== notification)
         root.storedNotifications = root.storedNotifications.filter(n => n !== notification)
         if (root.storedNotifications.length === 0) root.notifPanelVisible = false
     }
 
     function clearAllNotifications() {
-        for (var i = 0; i < root.activeNotifications.length; i++) {
-            root.activeNotifications[i].tracked = false
-            root.activeNotifications[i].dismiss()
-        }
-        // Also clear stored that weren't in active
-        for (var j = 0; j < root.storedNotifications.length; j++) {
-            var n = root.storedNotifications[j]
-            if (n.tracked) { n.tracked = false; n.dismiss() }
-        }
-        root.activeNotifications = []
+        // Dismissing can synchronously emit `closed`. Clear UI state first so
+        // those callbacks cannot overwrite a partially cleared queue.
+        var notifications = root.storedNotifications.slice()
+        root.toastNotifications = []
         root.storedNotifications = []
         root.notifPanelVisible = false
+
+        for (var i = 0; i < notifications.length; i++) {
+            var notification = notifications[i]
+            notification.tracked = false
+            notification.dismiss()
+        }
     }
 
     function toggleNotifPanel() {

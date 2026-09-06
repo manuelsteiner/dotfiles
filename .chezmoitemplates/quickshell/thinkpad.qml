@@ -90,6 +90,8 @@ Singleton {
     property int notifPanelWidth: 360
     property int notifPanelHeight: 420
     property int maxStoredNotifications: 20
+    // Set above 1 to stack multiple live toasts. Set to 0 to disable them.
+    property int maxLiveNotificationToasts: 1
 
     // ── External commands ──
     property string volumeApp: "pwvucontrol"

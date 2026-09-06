@@ -10,31 +10,31 @@ Scope {
         PanelWindow {
             property var modelData
             screen: modelData
-            visible: root.activeNotifications.length > 0
+            visible: root.toastNotifications.length > 0
             WlrLayershell.namespace: "qs-notifications"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
             anchors { top: true; right: true }
             implicitWidth: 380
-            implicitHeight: notifList.contentHeight + 20
+            implicitHeight: toastColumn.implicitHeight + 20
             color: "transparent"
 
-            ListView {
-                id: notifList
+            Column {
+                id: toastColumn
                 anchors.top: parent.top
                 anchors.right: parent.right
                 anchors.topMargin: 10
                 anchors.rightMargin: 10
                 width: 360
                 spacing: 8
-                interactive: false
-                model: root.activeNotifications
 
-                delegate: Rectangle {
+                Repeater {
+                    model: root.toastNotifications
+
+                    delegate: Rectangle {
                         required property var modelData
-                        required property int index
-                        width: notifList.width
-                        implicitHeight: notifContent.implicitHeight + 24
+                        width: toastColumn.width
+                        implicitHeight: toastContent.implicitHeight + 24
                         radius: 10
                         color: Theme.surface
                         border.color: Theme.overlay
@@ -52,7 +52,7 @@ Scope {
                         }
 
                         ColumnLayout {
-                            id: notifContent
+                            id: toastContent
                             anchors.fill: parent
                             anchors.margins: 12
                             spacing: 4
@@ -132,16 +132,16 @@ Scope {
                                         required property var modelData
                                         Layout.fillWidth: true
                                         height: 26; radius: 4
-                                        color: actMA.containsMouse ? Theme.highlightMed : Theme.overlay
+                                        color: actionArea.containsMouse ? Theme.highlightMed : Theme.overlay
                                         Behavior on color { ColorAnimation { duration: 60 } }
                                         Text {
                                             anchors.centerIn: parent
                                             text: modelData.text ?? ""
                                             font { family: Config.fontFamily; pixelSize: 11 }
-                                            color: actMA.containsMouse ? Theme.text : Theme.subtle
+                                            color: actionArea.containsMouse ? Theme.text : Theme.subtle
                                         }
                                         MouseArea {
-                                            id: actMA
+                                            id: actionArea
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             onClicked: modelData.invoke()
@@ -150,7 +150,7 @@ Scope {
                                 }
                             }
                         }
-
+                    }
                 }
             }
         }
