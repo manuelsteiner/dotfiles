@@ -11,7 +11,12 @@ FROM docker.io/library/rust:1-slim-trixie
 ARG RUST_ANALYZER_VERSION
 ARG RUST_ANALYZER_SHA256
 
-RUN set -eux; \
+RUN --mount=type=secret,id=company_ca,required=false \
+    set -eux; \
+    if [ -r /run/secrets/company_ca ]; then \
+      cp /etc/ssl/certs/ca-certificates.crt /tmp/company-ca-bundle; \
+      cat /run/secrets/company_ca >> /etc/ssl/certs/ca-certificates.crt; \
+    fi; \
     rustup component add rust-src; \
     apt-get update; \
     apt-get install -y --no-install-recommends curl ca-certificates; \
@@ -21,6 +26,7 @@ RUN set -eux; \
     gunzip -c /tmp/ra.gz > /usr/local/bin/rust-analyzer; \
     chmod +x /usr/local/bin/rust-analyzer; \
     apt-get purge -y curl; apt-get autoremove -y; \
-    rm -rf /var/lib/apt/lists/* /tmp/ra.gz
+    rm -rf /var/lib/apt/lists/* /tmp/ra.gz; \
+    if [ -e /tmp/company-ca-bundle ]; then mv /tmp/company-ca-bundle /etc/ssl/certs/ca-certificates.crt; fi
 
 ENTRYPOINT ["rust-analyzer"]

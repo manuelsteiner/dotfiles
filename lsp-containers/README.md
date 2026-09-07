@@ -10,6 +10,7 @@ package definitions.
 ```sh
 ./build.sh                 # all images
 ./build.sh gopls texlab    # only some
+./build.sh --ca ~/company-ca.pem  # work HTTPS-inspection CA
 ```
 
 Images are tagged `localhost/nvim-lsp/<name>:local`. Podman never auto-pulls
@@ -20,6 +21,18 @@ after bumping a version in `versions.env`.
 `versions.env` is the single source of truth for *what* versions run;
 Containerfiles describe only *how* to build. `build.sh` passes each `ARG` a
 Containerfile declares from `versions.env`.
+
+### Work CA
+
+If a work network intercepts HTTPS, pass its PEM root certificate with
+`--ca /path/to/company-ca.pem`. The build script exposes it only as a Podman
+build secret. Each download step temporarily trusts it, then restores the
+original trust store before the image layer is committed. The certificate is
+not copied into an image or this repository.
+
+Base-image pulls happen before a Containerfile runs. If Podman cannot pull a
+`FROM` image, configure the same CA in rootless Podman's per-registry trust
+store separately.
 
 ## Integrity
 

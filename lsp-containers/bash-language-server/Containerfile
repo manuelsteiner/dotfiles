@@ -4,8 +4,16 @@ FROM docker.io/library/node:22-alpine
 
 ARG BASH_LANGUAGE_SERVER_VERSION
 
-RUN apk add --no-cache bash git shellcheck \
+RUN --mount=type=secret,id=company_ca,required=false \
+    set -e; \
+    if [ -r /run/secrets/company_ca ]; then \
+      cp /etc/ssl/certs/ca-certificates.crt /tmp/company-ca-bundle; \
+      cat /run/secrets/company_ca >> /etc/ssl/certs/ca-certificates.crt; \
+      export NODE_EXTRA_CA_CERTS=/run/secrets/company_ca; \
+    fi; \
+    apk add --no-cache bash git shellcheck \
  && npm install -g --omit=dev "bash-language-server@${BASH_LANGUAGE_SERVER_VERSION}" \
- && npm cache clean --force
+ && npm cache clean --force; \
+    if [ -e /tmp/company-ca-bundle ]; then mv /tmp/company-ca-bundle /etc/ssl/certs/ca-certificates.crt; fi
 
 ENTRYPOINT ["bash-language-server", "start"]

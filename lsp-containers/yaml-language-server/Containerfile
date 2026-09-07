@@ -4,7 +4,9 @@ FROM docker.io/library/node:22-alpine
 
 ARG YAML_LANGUAGE_SERVER_VERSION
 
-RUN npm install -g --omit=dev "yaml-language-server@${YAML_LANGUAGE_SERVER_VERSION}" \
+RUN --mount=type=secret,id=company_ca,required=false \
+    if [ -r /run/secrets/company_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/company_ca; fi; \
+    npm install -g --omit=dev "yaml-language-server@${YAML_LANGUAGE_SERVER_VERSION}" \
  && npm cache clean --force
 
 ENTRYPOINT ["yaml-language-server", "--stdio"]

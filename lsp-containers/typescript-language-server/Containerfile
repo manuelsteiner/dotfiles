@@ -5,7 +5,9 @@ FROM docker.io/library/node:22-alpine
 ARG TYPESCRIPT_LANGUAGE_SERVER_VERSION
 ARG TYPESCRIPT_VERSION
 
-RUN npm install -g --omit=dev \
+RUN --mount=type=secret,id=company_ca,required=false \
+    if [ -r /run/secrets/company_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/company_ca; fi; \
+    npm install -g --omit=dev \
       "typescript-language-server@${TYPESCRIPT_LANGUAGE_SERVER_VERSION}" \
       "typescript@${TYPESCRIPT_VERSION}" \
  && npm cache clean --force

@@ -4,7 +4,9 @@ FROM docker.io/library/node:22-alpine
 
 ARG BASEDPYRIGHT_VERSION
 
-RUN npm install -g --omit=dev "basedpyright@${BASEDPYRIGHT_VERSION}" \
+RUN --mount=type=secret,id=company_ca,required=false \
+    if [ -r /run/secrets/company_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/company_ca; fi; \
+    npm install -g --omit=dev "basedpyright@${BASEDPYRIGHT_VERSION}" \
  && npm cache clean --force
 
 ENTRYPOINT ["basedpyright-langserver", "--stdio"]

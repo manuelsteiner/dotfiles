@@ -5,7 +5,14 @@
 # verified against HashiCorp's signed SHA256SUMS.
 FROM docker.io/library/alpine:3.22 AS fetch
 
-RUN apk add --no-cache curl unzip
+RUN --mount=type=secret,id=company_ca,required=false \
+    set -e; \
+    if [ -r /run/secrets/company_ca ]; then \
+      cp /etc/ssl/certs/ca-certificates.crt /tmp/company-ca-bundle; \
+      cat /run/secrets/company_ca >> /etc/ssl/certs/ca-certificates.crt; \
+    fi; \
+    apk add --no-cache curl unzip; \
+    if [ -e /tmp/company-ca-bundle ]; then mv /tmp/company-ca-bundle /etc/ssl/certs/ca-certificates.crt; fi
 
 ARG TERRAFORM_LS_VERSION
 ARG TERRAFORM_LS_SHA256
@@ -13,13 +20,19 @@ ARG TERRAFORM_VERSION
 ARG TERRAFORM_SHA256
 
 WORKDIR /dl
-RUN set -eux; \
+RUN --mount=type=secret,id=company_ca,required=false \
+    set -eux; \
+    if [ -r /run/secrets/company_ca ]; then \
+      cp /etc/ssl/certs/ca-certificates.crt /tmp/company-ca-bundle; \
+      cat /run/secrets/company_ca >> /etc/ssl/certs/ca-certificates.crt; \
+    fi; \
     curl -fsSLO "https://releases.hashicorp.com/terraform-ls/${TERRAFORM_LS_VERSION}/terraform-ls_${TERRAFORM_LS_VERSION}_linux_amd64.zip"; \
     echo "${TERRAFORM_LS_SHA256}  terraform-ls_${TERRAFORM_LS_VERSION}_linux_amd64.zip" | sha256sum -c -; \
     unzip -o "terraform-ls_${TERRAFORM_LS_VERSION}_linux_amd64.zip" -d /out; \
     curl -fsSLO "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"; \
     echo "${TERRAFORM_SHA256}  terraform_${TERRAFORM_VERSION}_linux_amd64.zip" | sha256sum -c -; \
-    unzip -o "terraform_${TERRAFORM_VERSION}_linux_amd64.zip" -d /out
+    unzip -o "terraform_${TERRAFORM_VERSION}_linux_amd64.zip" -d /out; \
+    if [ -e /tmp/company-ca-bundle ]; then mv /tmp/company-ca-bundle /etc/ssl/certs/ca-certificates.crt; fi
 
 FROM docker.io/library/alpine:3.22
 

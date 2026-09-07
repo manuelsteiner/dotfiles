@@ -7,8 +7,17 @@ ARG ANSIBLE_LANGUAGE_SERVER_VERSION
 ARG ANSIBLE_CORE_VERSION
 ARG ANSIBLE_LINT_VERSION
 
-RUN apt-get update \
- && apt-get install -y --no-install-recommends python3 python3-venv ca-certificates \
+RUN --mount=type=secret,id=company_ca,required=false \
+    set -e; \
+    apt_ca=; \
+    if [ -r /run/secrets/company_ca ]; then apt_ca='-o Acquire::https::CaInfo=/run/secrets/company_ca'; fi; \
+    apt-get $apt_ca update \
+ && apt-get $apt_ca install -y --no-install-recommends python3 python3-venv ca-certificates \
+ && if [ -r /run/secrets/company_ca ]; then \
+      cp /etc/ssl/certs/ca-certificates.crt /tmp/company-ca-bundle; \
+      cat /run/secrets/company_ca >> /etc/ssl/certs/ca-certificates.crt; \
+      export NODE_EXTRA_CA_CERTS=/run/secrets/company_ca PIP_CERT=/etc/ssl/certs/ca-certificates.crt; \
+    fi \
  && python3 -m venv /opt/ansible \
  && /opt/ansible/bin/pip install --no-cache-dir \
       "ansible-core==${ANSIBLE_CORE_VERSION}" \
@@ -16,7 +25,8 @@ RUN apt-get update \
  && npm install -g --omit=dev \
       "@ansible/ansible-language-server@${ANSIBLE_LANGUAGE_SERVER_VERSION}" \
  && npm cache clean --force \
- && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/*; \
+    if [ -e /tmp/company-ca-bundle ]; then mv /tmp/company-ca-bundle /etc/ssl/certs/ca-certificates.crt; fi
 
 ENV PATH="/opt/ansible/bin:${PATH}"
 

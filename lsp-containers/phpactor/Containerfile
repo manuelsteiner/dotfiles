@@ -6,12 +6,18 @@ FROM docker.io/library/php:8.3-cli-alpine
 ARG PHPACTOR_VERSION
 ARG PHPACTOR_SHA256
 
-RUN set -eux; \
+RUN --mount=type=secret,id=company_ca,required=false \
+    set -eux; \
+    if [ -r /run/secrets/company_ca ]; then \
+      cp /etc/ssl/certs/ca-certificates.crt /tmp/company-ca-bundle; \
+      cat /run/secrets/company_ca >> /etc/ssl/certs/ca-certificates.crt; \
+    fi; \
     apk add --no-cache git curl; \
     curl -fsSL -o /usr/local/bin/phpactor \
       "https://github.com/phpactor/phpactor/releases/download/${PHPACTOR_VERSION}/phpactor.phar"; \
     echo "${PHPACTOR_SHA256}  /usr/local/bin/phpactor" | sha256sum -c -; \
     chmod +x /usr/local/bin/phpactor; \
-    php -r 'exit((int) !(extension_loaded("dom") && extension_loaded("mbstring") && extension_loaded("tokenizer")));'
+    php -r 'exit((int) !(extension_loaded("dom") && extension_loaded("mbstring") && extension_loaded("tokenizer")));'; \
+    if [ -e /tmp/company-ca-bundle ]; then mv /tmp/company-ca-bundle /etc/ssl/certs/ca-certificates.crt; fi
 
 ENTRYPOINT ["phpactor", "language-server"]

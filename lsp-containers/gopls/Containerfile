@@ -6,8 +6,15 @@ FROM docker.io/library/golang:1.27-alpine
 
 ARG GOPLS_VERSION
 
-RUN go install "golang.org/x/tools/gopls@v${GOPLS_VERSION}" \
+RUN --mount=type=secret,id=company_ca,required=false \
+    set -e; \
+    if [ -r /run/secrets/company_ca ]; then \
+      cp /etc/ssl/certs/ca-certificates.crt /tmp/company-ca-bundle; \
+      cat /run/secrets/company_ca >> /etc/ssl/certs/ca-certificates.crt; \
+    fi; \
+    go install "golang.org/x/tools/gopls@v${GOPLS_VERSION}" \
  && mv /go/bin/gopls /usr/local/bin/gopls \
- && rm -rf /root/.cache/go-build /go/pkg/mod
+ && rm -rf /root/.cache/go-build /go/pkg/mod; \
+    if [ -e /tmp/company-ca-bundle ]; then mv /tmp/company-ca-bundle /etc/ssl/certs/ca-certificates.crt; fi
 
 ENTRYPOINT ["gopls"]

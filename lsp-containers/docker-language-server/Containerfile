@@ -5,8 +5,15 @@ FROM docker.io/library/golang:1.27-alpine AS build
 ARG DOCKER_LANGUAGE_SERVER_VERSION
 ENV CGO_ENABLED=0
 
-RUN go install \
-      "github.com/docker/docker-language-server/cmd/docker-language-server@v${DOCKER_LANGUAGE_SERVER_VERSION}"
+RUN --mount=type=secret,id=company_ca,required=false \
+    set -e; \
+    if [ -r /run/secrets/company_ca ]; then \
+      cp /etc/ssl/certs/ca-certificates.crt /tmp/company-ca-bundle; \
+      cat /run/secrets/company_ca >> /etc/ssl/certs/ca-certificates.crt; \
+    fi; \
+    go install \
+      "github.com/docker/docker-language-server/cmd/docker-language-server@v${DOCKER_LANGUAGE_SERVER_VERSION}"; \
+    if [ -e /tmp/company-ca-bundle ]; then mv /tmp/company-ca-bundle /etc/ssl/certs/ca-certificates.crt; fi
 
 FROM docker.io/library/alpine:3.22
 

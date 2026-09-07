@@ -3,19 +3,29 @@
 # $VIMRUNTIME and the Hyprland Lua stubs are mounted read-only at runtime.
 FROM docker.io/library/debian:trixie-slim AS fetch
 
-RUN apt-get update \
- && apt-get install -y --no-install-recommends curl ca-certificates \
+RUN --mount=type=secret,id=company_ca,required=false \
+    set -e; \
+    apt_ca=; \
+    if [ -r /run/secrets/company_ca ]; then apt_ca='-o Acquire::https::CaInfo=/run/secrets/company_ca'; fi; \
+    apt-get $apt_ca update \
+ && apt-get $apt_ca install -y --no-install-recommends curl ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
 ARG LUA_LANGUAGE_SERVER_VERSION
 ARG LUA_LANGUAGE_SERVER_SHA256
 
-RUN set -eux; \
+RUN --mount=type=secret,id=company_ca,required=false \
+    set -eux; \
+    if [ -r /run/secrets/company_ca ]; then \
+      cp /etc/ssl/certs/ca-certificates.crt /tmp/company-ca-bundle; \
+      cat /run/secrets/company_ca >> /etc/ssl/certs/ca-certificates.crt; \
+    fi; \
     curl -fsSL -o /tmp/luals.tar.gz \
       "https://github.com/LuaLS/lua-language-server/releases/download/${LUA_LANGUAGE_SERVER_VERSION}/lua-language-server-${LUA_LANGUAGE_SERVER_VERSION}-linux-x64.tar.gz"; \
     echo "${LUA_LANGUAGE_SERVER_SHA256}  /tmp/luals.tar.gz" | sha256sum -c -; \
     mkdir -p /opt/lua-language-server; \
-    tar -xzf /tmp/luals.tar.gz -C /opt/lua-language-server
+    tar -xzf /tmp/luals.tar.gz -C /opt/lua-language-server; \
+    if [ -e /tmp/company-ca-bundle ]; then mv /tmp/company-ca-bundle /etc/ssl/certs/ca-certificates.crt; fi
 
 FROM docker.io/library/debian:trixie-slim
 
