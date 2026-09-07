@@ -16,7 +16,7 @@ Scope {
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
             anchors { top: true; right: true }
             implicitWidth: 380
-            implicitHeight: toastColumn.implicitHeight + 20
+            implicitHeight: toastColumn.height + 20
             color: "transparent"
 
             Column {
@@ -26,6 +26,7 @@ Scope {
                 anchors.topMargin: 10
                 anchors.rightMargin: 10
                 width: 360
+                height: childrenRect.height
                 spacing: 8
 
                 Repeater {
