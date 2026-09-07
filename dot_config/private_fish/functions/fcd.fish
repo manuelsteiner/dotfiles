@@ -4,7 +4,7 @@ function fcd -a dir
     end
 
     if test -z "$dir"
-        set folder (fd --hidden --glob .git --type d --maxdepth 3 --format '{//}' ~/Projects | fzf --reverse --height ~100%)
+        set folder (fd --hidden --glob .git --type d --maxdepth 4 --format '{//}' ~/Projects | fzf --reverse --height ~100%)
     else
         set folder (fd --hidden --glob .git --type d --format '{//}' "$dir" | fzf --reverse --height ~100%)
     end

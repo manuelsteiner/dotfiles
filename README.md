@@ -146,6 +146,10 @@ user units. Chezmoi also renders `~/.config/theme/profile.conf` from `.role`.
 `theme-set` uses it to skip Quickshell, Hyprland, and Hyprlock links and reloads
 on work machines while keeping terminal theming shared.
 
+`theme/starship.toml.tmpl` is also rendered per role. The work profile displays
+the red `with !` marker when `TF_VAR_vsphere_user` is set, after the Git branch
+and before the prompt character.
+
 ## Hyprland displays and wallpaper
 
 Monitor layout is host-specific. `nuc` uses its HDMI output; `thinkpad` uses

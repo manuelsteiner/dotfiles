@@ -5,7 +5,8 @@ $directory\
 $sudo\
 ${env_var.ZMX_SESSION}\
 $git_branch\
-$character\
+{{ if eq .role "work" }}${env_var.DEPLOYMENT_CREDS}\
+{{ end }}$character\
 """
 
 [directory]
@@ -37,6 +38,11 @@ style = "fg:yellow"
 symbol = ""
 ignore_branches = ["master", "main"]
 
+{{ if eq .role "work" }}[env_var.DEPLOYMENT_CREDS]
+variable = "TF_VAR_vsphere_user"
+format = "[with ! ]($style)"
+style = "fg:red"
+{{ end }}
 [character]
 format = "$symbol "
 success_symbol = "[❯](blue)"
