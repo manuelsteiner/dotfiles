@@ -8,10 +8,24 @@ local active_theme = active_theme()
 local colorscheme = active_theme.colorscheme
 local oled = active_theme.oled == true
 
-local function set_background(groups, background)
+local function resolved_highlight(name, seen)
+    seen = seen or {}
+    if seen[name] then return {} end
+    seen[name] = true
+
+    local highlight = vim.api.nvim_get_hl(0, { name = name, link = false })
+    if next(highlight) ~= nil then return highlight end
+
+    local linked = vim.api.nvim_get_hl(0, { name = name, link = true })
+    return linked.link and resolved_highlight(linked.link, seen) or {}
+end
+
+local function set_background(groups, background, create)
     for _, group in ipairs(groups) do
-        local highlight = vim.api.nvim_get_hl(0, { name = group, link = false })
-        if next(highlight) ~= nil then
+        local highlight = resolved_highlight(group)
+        if create or next(highlight) ~= nil then
+            highlight.default = nil
+            highlight.link = nil
             highlight.bg = background
             vim.api.nvim_set_hl(0, group, highlight)
         end
@@ -21,7 +35,7 @@ end
 local function apply_oled_ui()
     set_background({ "Normal", "NormalNC", "EndOfBuffer", "SignColumn", "LineNr", "FoldColumn" }, "#000000")
 
-    local surface = active_theme.surface or "#18181a"
+    local surface = active_theme.highlight_low or "#18181a"
     local overlay = active_theme.overlay or "#2a2a2d"
     local selection = active_theme.highlight_med or "#353539"
 
@@ -36,6 +50,12 @@ local function apply_oled_ui()
         "BlinkCmpMenuSelection", "BlinkCmpDocCursorLine", "BlinkCmpSignatureHelpActiveParameter",
         "BlinkCmpScrollBarThumb",
     }, selection)
+
+    set_background({
+        "SnacksNormal", "SnacksNormalNC", "SnacksPicker", "SnacksPickerBox",
+        "SnacksPickerInput", "SnacksPickerList", "SnacksPickerPreview",
+    }, surface, true)
+    set_background({ "SnacksPickerListCursorLine", "SnacksPickerPreviewCursorLine" }, selection, true)
 end
 
 local themes = {

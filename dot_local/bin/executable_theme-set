@@ -287,8 +287,8 @@ control_char: {foreground: "$blue"}
 broken_symlink: {foreground: "$red"}
 broken_path_overlay: {foreground: "$highlightHigh"}
 EOF
-    printf 'return { colorscheme = "%s", oled = %s, surface = "%s", overlay = "%s", highlight_med = "%s" }\n' \
-        "$nvim_colorscheme" "$oled" "$surface" "$overlay" "$highlightMed" > "$output/nvim.lua"
+    printf 'return { colorscheme = "%s", oled = %s, surface = "%s", overlay = "%s", highlight_low = "%s", highlight_med = "%s" }\n' \
+        "$nvim_colorscheme" "$oled" "$surface" "$overlay" "$highlightLow" "$highlightMed" > "$output/nvim.lua"
 
     cat > "$output/quickshell/Theme.qml" <<EOF
 pragma Singleton
