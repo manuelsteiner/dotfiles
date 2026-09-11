@@ -79,12 +79,10 @@ Singleton {
     property int radiusPopout: 14
     property bool popoutHalo: true
 
-    // Elevation ink alphas (see "Patch — lift the elevation scale"). `base`
-    // is pure black in every -oled palette, so these are the one place to
-    // tune how islands/popouts read against a dark wallpaper — never add a
-    // per-theme override instead.
-    property real elev1Alpha: 0.07
-    property real elev2Alpha: 0.10
+    // Normal-theme elevation. Theme.qml lifts these to 0.07 and 0.10 only
+    // for the shared OLED category, whose palettes use a pure-black base.
+    property real elev1Alpha: 0.04
+    property real elev2Alpha: 0.07
     property real edgeAlpha: 0.18
 
     property string osdPosition: "top" // "top", "center", "bottom"

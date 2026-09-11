@@ -49,6 +49,14 @@ blend() {
 
 render() {
     local output="$1"
+    local elev1_alpha='Config.elev1Alpha'
+    local elev2_alpha='Config.elev2Alpha'
+    local hyprlock_elev2_alpha='0.07'
+    if [[ "$oled" == true ]]; then
+        elev1_alpha='0.07'
+        elev2_alpha='0.10'
+        hyprlock_elev2_alpha='0.10'
+    fi
     mkdir -p "$output/quickshell"
 
     cat > "$output/kitty.conf" <<EOF
@@ -110,7 +118,7 @@ return {
 EOF
 
     local elev2_hex edge_hex
-    elev2_hex="$(blend "$base" "$text" 0.10)"
+    elev2_hex="$(blend "$base" "$text" "$hyprlock_elev2_alpha")"
     edge_hex="$(blend "$base" "$text" 0.18)"
 
     cat > "$output/hyprlock.conf" <<EOF
@@ -337,8 +345,8 @@ Singleton {
     function _ink(a) { return Qt.rgba(text.r, text.g, text.b, a) }
 
     // Opaque — composited over the palette's own base.
-    readonly property color elev1:   Qt.tint(base, _ink(Config.elev1Alpha))   // bar islands
-    readonly property color elev2:   Qt.tint(base, _ink(Config.elev2Alpha))   // popouts, toasts, OSD, menus
+    readonly property color elev1:   Qt.tint(base, _ink($elev1_alpha))   // bar islands
+    readonly property color elev2:   Qt.tint(base, _ink($elev2_alpha))   // popouts, toasts, OSD, menus
     readonly property color edge:    Qt.tint(base, _ink(Config.edgeAlpha))   // the 1px border on everything
 
     // Translucent — composited over whatever they sit on.
