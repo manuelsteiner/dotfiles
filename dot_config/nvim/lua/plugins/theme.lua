@@ -74,6 +74,7 @@ local oled_picker_namespace = vim.api.nvim_create_namespace("dotfiles_oled_snack
 
 local function apply_oled_picker_surfaces()
     local surface = active_theme.highlight_low or "#18181a"
+    local text = resolved_highlight("Normal").fg
     local groups = {
         "Normal", "NormalNC", "NormalFloat", "SignColumn", "FoldColumn", "LineNr", "EndOfBuffer",
         "SnacksNormal", "SnacksNormalNC", "SnacksPicker", "SnacksPickerBox",
@@ -87,6 +88,7 @@ local function apply_oled_picker_surfaces()
                 highlight.default = nil
                 highlight.link = nil
                 highlight.bg = surface
+                if group:match("^Snacks") then highlight.fg = text end
                 vim.api.nvim_set_hl(oled_picker_namespace, group, highlight)
             end
             vim.api.nvim_win_set_hl_ns(win, oled_picker_namespace)
