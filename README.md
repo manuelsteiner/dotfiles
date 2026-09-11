@@ -152,10 +152,11 @@ and before the prompt character.
 
 ## Hyprland displays and wallpaper
 
-Monitor layout is host-specific. `nuc` uses its HDMI output; `thinkpad` uses
-its internal `eDP-1` display plus a generic external-display fallback. Other
-hosts use a generic fallback. We may replace these declarations with
-Hyprmoncfg later.
+Monitor layout is host-specific. `nuc` uses `HDMI-A-2` at 4K/60 and the OLED
+on `HDMI-A-1` at 4K/240, positioned flush to its right. `thinkpad` uses its
+internal `eDP-1` display plus a generic external-display fallback. Other hosts
+use a generic fallback. We may replace these declarations with Hyprmoncfg
+later.
 
 Wallpaper images are not tracked. Hyprpaper and Hyprlock both refer to
 `~/Pictures/wallpaper.png`, so each private machine can use its own image at

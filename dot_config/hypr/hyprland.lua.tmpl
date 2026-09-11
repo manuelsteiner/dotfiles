@@ -30,6 +30,13 @@ hl.monitor({
     position = "0x0",
     scale    = 1,
 })
+
+hl.monitor({
+    output   = "HDMI-A-1",
+    mode     = "3840x2160@240.00",
+    position = "3840x0",
+    scale    = 1,
+})
 {{- else }}
 hl.monitor({
     output   = "",
@@ -294,6 +301,22 @@ hl.bind(mainMod .. " + SHIFT + H", hl.dsp.window.move({ direction = "l" }))
 hl.bind(mainMod .. " + SHIFT + J", hl.dsp.window.move({ direction = "d" }))
 hl.bind(mainMod .. " + SHIFT + K", hl.dsp.window.move({ direction = "u" }))
 hl.bind(mainMod .. " + SHIFT + L", hl.dsp.window.move({ direction = "r" }))
+
+-- Send the active workspace to the other connected monitor. ALT + SHIFT + O
+-- keeps it close to the window-movement binds while remaining distinct from them.
+local function moveWorkspaceToOtherMonitor()
+    local activeMonitor = hl.get_active_monitor()
+    if not activeMonitor then return end
+
+    for _, monitor in ipairs(hl.get_monitors()) do
+        if monitor.name ~= activeMonitor.name then
+            hl.dispatch(hl.dsp.workspace.move({ monitor = monitor }))
+            return
+        end
+    end
+end
+
+hl.bind(mainMod .. " + SHIFT + O", moveWorkspaceToOtherMonitor)
 
 -- Switch workspaces
 local workspaceKeys = { T = 1, B = 2, C = 3, N = 4, M = 5, U = 6, W = 7 }
