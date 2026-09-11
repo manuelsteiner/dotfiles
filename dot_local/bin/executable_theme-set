@@ -214,26 +214,26 @@ filekinds:
   block_device: {foreground: "$orange"}
   char_device: {foreground: "$yellow"}
   special: {foreground: "$magenta"}
-  mount_point: {foreground: "$highlightMed"}
+  mount_point: {foreground: "$cyan"}
 perms:
   user_read: {foreground: "$subtle"}
-  user_write: {foreground: "$highlightMed"}
+  user_write: {foreground: "$yellow"}
   user_execute_file: {foreground: "$magenta"}
   user_execute_other: {foreground: "$magenta"}
   group_read: {foreground: "$subtle"}
-  group_write: {foreground: "$highlightMed"}
+  group_write: {foreground: "$yellow"}
   group_execute: {foreground: "$magenta"}
   other_read: {foreground: "$subtle"}
-  other_write: {foreground: "$highlightMed"}
+  other_write: {foreground: "$yellow"}
   other_execute: {foreground: "$magenta"}
   special_user_file: {foreground: "$magenta"}
-  special_other: {foreground: "$highlightMed"}
+  special_other: {foreground: "$yellow"}
   attribute: {foreground: "$subtle"}
 size:
   major: {foreground: "$subtle"}
   minor: {foreground: "$cyan"}
   number_byte: {foreground: "$subtle"}
-  number_kilo: {foreground: "$highlightHigh"}
+  number_kilo: {foreground: "$blue"}
   number_mega: {foreground: "$blue"}
   number_giga: {foreground: "$magenta"}
   number_huge: {foreground: "$magenta"}
@@ -246,7 +246,7 @@ users:
   user_you: {foreground: "$yellow"}
   user_root: {foreground: "$red"}
   user_other: {foreground: "$magenta"}
-  group_yours: {foreground: "$highlightHigh"}
+  group_yours: {foreground: "$blue"}
   group_other: {foreground: "$muted"}
   group_root: {foreground: "$red"}
 links:
@@ -276,14 +276,14 @@ file_type:
   video: {foreground: "$red"}
   music: {foreground: "$cyan"}
   lossless: {foreground: "$muted"}
-  crypto: {foreground: "$highlightMed"}
+  crypto: {foreground: "$cyan"}
   document: {foreground: "$subtle"}
   compressed: {foreground: "$magenta"}
   temp: {foreground: "$orange"}
   compiled: {foreground: "$blue"}
   build: {foreground: "$muted"}
   source: {foreground: "$orange"}
-punctuation: {foreground: "$highlightHigh"}
+punctuation: {foreground: "$subtle"}
 date: {foreground: "$blue"}
 inode: {foreground: "$subtle"}
 blocks: {foreground: "$muted"}
@@ -293,7 +293,7 @@ flags: {foreground: "$magenta"}
 symlink_path: {foreground: "$cyan"}
 control_char: {foreground: "$blue"}
 broken_symlink: {foreground: "$red"}
-broken_path_overlay: {foreground: "$highlightHigh"}
+broken_path_overlay: {foreground: "$red"}
 EOF
     printf 'return { colorscheme = "%s", oled = %s, surface = "%s", overlay = "%s", highlight_low = "%s", highlight_med = "%s" }\n' \
         "$nvim_colorscheme" "$oled" "$surface" "$overlay" "$highlightLow" "$highlightMed" > "$output/nvim.lua"
