@@ -20,13 +20,14 @@ local function resolved_highlight(name, seen)
     return linked.link and resolved_highlight(linked.link, seen) or {}
 end
 
-local function set_background(groups, background, create)
+local function set_background(groups, background, create, foreground)
     for _, group in ipairs(groups) do
         local highlight = resolved_highlight(group)
         if create or next(highlight) ~= nil then
             highlight.default = nil
             highlight.link = nil
             highlight.bg = background
+            if foreground then highlight.fg = foreground end
             vim.api.nvim_set_hl(0, group, highlight)
         end
     end
@@ -38,6 +39,7 @@ local function apply_oled_ui()
     local surface = active_theme.highlight_low or "#18181a"
     local overlay = active_theme.overlay or "#2a2a2d"
     local selection = active_theme.highlight_med or "#353539"
+    local selection_foreground = resolved_highlight("Normal").fg
 
     set_background({
         "NormalFloat", "Float", "NvimFloat", "FloatBorder", "FloatTitle", "FloatFooter",
@@ -49,7 +51,7 @@ local function apply_oled_ui()
         "PmenuSel", "PmenuKindSel", "PmenuExtraSel", "PmenuMatchSel", "PmenuThumb",
         "BlinkCmpMenuSelection", "BlinkCmpDocCursorLine", "BlinkCmpSignatureHelpActiveParameter",
         "BlinkCmpScrollBarThumb",
-    }, selection)
+    }, selection, false, selection_foreground)
 
     set_background({
         "SnacksNormal", "SnacksNormalNC", "SnacksPicker", "SnacksPickerBox",
