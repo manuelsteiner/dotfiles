@@ -15,10 +15,11 @@ BarCell {
     pressed: bellMA.pressed
     // "always": hue at rest, grey to subtle when suppressed (today's look).
     // "state": rest at subtle, accent when there's something to report
-    // (unread notifications) or when DND/suppression is active.
+    // (unread notifications). DND on its own no longer colors the icon —
+    // it's a deliberate action, not an abnormal condition to flag.
     active: Config.barAccentPolicy === "always"
         ? !root.notifSuppressed
-        : (root.storedNotifications.length > 0 || root.notifSuppressed)
+        : root.storedNotifications.length > 0
     urgent: false
     accentColor: Theme.notificationColor
 
@@ -42,9 +43,12 @@ BarCell {
         width: Math.max(14, badgeText.implicitWidth + 6)
         height: 14
         radius: 7
-        color: "transparent"
+        // Elev2 fill + a 1px hairline ring — reads as "just an outline"
+        // against the near-black bar without being literally transparent
+        // (which let the bell glyph show through the badge oddly).
+        color: Theme.elev2
         border.width: 1
-        border.color: bellBlock.anyCritical ? Theme.red : Theme.edge
+        border.color: bellBlock.anyCritical ? Theme.red : Theme.redDim
 
         Text {
             id: badgeText
@@ -52,7 +56,7 @@ BarCell {
             text: root.storedNotifications.length > 99
                 ? "99+" : root.storedNotifications.length.toString()
             font { family: Config.fontFamily; pixelSize: 10; bold: true; features: { "tnum": 1 } }
-            color: bellBlock.anyCritical ? Theme.red : Theme.text
+            color: bellBlock.anyCritical ? Theme.red : Theme.redDim
         }
     }
 

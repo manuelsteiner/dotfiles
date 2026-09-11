@@ -58,7 +58,11 @@ Scope {
                     BarClock {
                         id: clockItem
                         anchors.centerIn: parent
-                        width: parent.width
+                        // Unlike the other islands' content, the clock fills
+                        // its island's width rather than sizing to itself, so
+                        // it needs its own horizontal inset — otherwise it
+                        // touches the rounded island edges with no padding.
+                        width: parent.width - 12
                         screen: barWindow.screen
                     }
                 }

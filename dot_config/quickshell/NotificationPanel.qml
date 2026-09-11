@@ -126,24 +126,24 @@ Scope {
                         }
 
                         Rectangle {
-                            // True outline — transparent fill, matching the
-                            // bar badge — and urgency-conditional like the
+                            // Elev2 fill + hairline ring, matching the bar
+                            // badge exactly, urgency-conditional like the
                             // per-group ×N chip: a count of routine
                             // notifications shouldn't carry the same red as
                             // an actually critical one.
                             visible: root.storedNotifications.length > 0
                             width: Math.max(20, countText.implicitWidth + 8)
                             height: 20; radius: 10
-                            color: "transparent"
+                            color: Theme.elev2
                             border.width: 1
-                            border.color: notifWindow.anyCritical ? Theme.red : Theme.edge
+                            border.color: notifWindow.anyCritical ? Theme.red : Theme.redDim
 
                             Text {
                                 id: countText
                                 anchors.centerIn: parent
                                 text: root.storedNotifications.length.toString()
                                 font { family: Config.fontFamily; pixelSize: 10; bold: true; features: { "tnum": 1 } }
-                                color: notifWindow.anyCritical ? Theme.red : Theme.text
+                                color: notifWindow.anyCritical ? Theme.red : Theme.redDim
                             }
                         }
 
@@ -213,31 +213,69 @@ Scope {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
 
-                        ListView {
+                        Flickable {
                             id: storedList
                             anchors.fill: parent
+                            contentWidth: width
+                            contentHeight: storedListCol.implicitHeight
                             clip: true
                             boundsBehavior: Flickable.StopAtBounds
-                            spacing: 6
-                            // Bound directly to the live notification array —
-                            // see the note above groupedNotifications' successor,
-                            // headIndices, for why this isn't a pre-grouped model.
-                            model: root.storedNotifications
 
-                            delegate: Rectangle {
+                          ColumnLayout {
+                            id: storedListCol
+                            width: storedList.width
+                            spacing: 6
+
+                            // Repeater, not ListView: bound directly to the
+                            // live notification array (see the note above
+                            // headIndices for why this isn't a pre-grouped
+                            // model). ListView.setModel itself segfaulted on
+                            // every reassignment of this reactive array in
+                            // this Qt build (confirmed via crash report,
+                            // twice, with different stack traces) — Repeater
+                            // is what every other panel in this shell already
+                            // uses for the same "raw reactive array as model"
+                            // pattern (Bluetooth/Wireless/Volume/Mic device
+                            // lists) and has never crashed.
+                            Repeater {
+                              // Integer count, not the array itself. Binding
+                              // model directly to a JS array means every
+                              // mutation reassigns a brand-new array
+                              // reference, which routes through
+                              // QQuickRepeater::setModel(QVariant) and fully
+                              // regenerates every delegate via incubation —
+                              // and that internal path segfaulted repeatedly
+                              // in this Qt build under this list's churn
+                              // (confirmed via crash report, three times, in
+                              // three different QML shapes upstream of it).
+                              // An integer model only adds/removes delegates
+                              // at the count's edges, which is a completely
+                              // different and far more robust internal path;
+                              // each delegate derives its own modelData by
+                              // reading its own index (never a neighbor's).
+                              model: root.storedNotifications.length
+
+                              delegate: Rectangle {
                                 id: groupDelegate
-                                required property var modelData
                                 required property int index
+                                readonly property var modelData: root.storedNotifications[index]
                                 readonly property var primary: modelData
                                 // Display label only — falls back to a generic
                                 // string, not unique. groupKeyValue (below) is
                                 // what actually decides grouping.
                                 readonly property string appName: modelData.appName || "Notification"
                                 readonly property string groupKeyValue: notifWindow.groupKey(modelData)
-                                readonly property bool isHead: index === 0
-                                    || groupDelegate.groupKeyValue !== notifWindow.groupKey(root.storedNotifications[index - 1])
-                                // Position of this row's group within headIndices; -1 for a continuation row.
-                                readonly property int headPos: groupDelegate.isHead ? notifWindow.headIndices.indexOf(index) : -1
+                                // Membership in the precomputed, plain-integer
+                                // headIndices array — NOT root.storedNotifications[index-1].
+                                // A delegate reaching into a sibling element of the
+                                // same live reactive array it's a delegate of is
+                                // exactly what crashed QQuickRepeater::regenerate()
+                                // during incubation (confirmed via crash report):
+                                // headIndices is computed once at the top level from
+                                // a snapshot of the array, so reading it here never
+                                // touches the array currently being incubated against.
+                                readonly property int headPos: notifWindow.headIndices.indexOf(index)
+                                readonly property bool isHead: groupDelegate.headPos !== -1
                                 readonly property int nextHeadStoredIndex: {
                                     if (!groupDelegate.isHead) return -1
                                     var hp = groupDelegate.headPos
@@ -253,7 +291,7 @@ Scope {
                                 // compact one-liner further down) while their
                                 // group is expanded; heads always render.
                                 visible: groupDelegate.isHead || groupDelegate.expanded
-                                width: storedList.width
+                                Layout.fillWidth: true
                                 implicitHeight: visible ? (groupDelegate.isHead ? groupCol.implicitHeight + 20 : extraRow.implicitHeight + 12) : 0
                                 radius: Config.radiusIsland
                                 color: groupDelegate.isHead ? Theme.elev2 : "transparent"
@@ -290,19 +328,19 @@ Scope {
                                         }
 
                                         Rectangle {
-                                            // True outline, matching the bar badge.
+                                            // Elev2 fill + hairline ring, matching the bar badge.
                                             visible: groupDelegate.groupCount > 1
                                             width: countBadge.implicitWidth + 8
                                             height: 16; radius: Config.radiusCell
-                                            color: "transparent"
+                                            color: Theme.elev2
                                             border.width: 1
-                                            border.color: groupDelegate.primary.urgency === NotificationUrgency.Critical ? Theme.red : Theme.edge
+                                            border.color: groupDelegate.primary.urgency === NotificationUrgency.Critical ? Theme.red : Theme.redDim
                                             Text {
                                                 id: countBadge
                                                 anchors.centerIn: parent
                                                 text: "×" + groupDelegate.groupCount
                                                 font { family: Config.fontFamily; pixelSize: 10; bold: true; features: { "tnum": 1 } }
-                                                color: groupDelegate.primary.urgency === NotificationUrgency.Critical ? Theme.red : Theme.text
+                                                color: groupDelegate.primary.urgency === NotificationUrgency.Critical ? Theme.red : Theme.redDim
                                             }
                                             MouseArea {
                                                 anchors.fill: parent
@@ -450,7 +488,9 @@ Scope {
                                         }
                                     }
                                 }
+                              }
                             }
+                          }
                         }
 
                         OverlayScrollBar { flickable: storedList }
