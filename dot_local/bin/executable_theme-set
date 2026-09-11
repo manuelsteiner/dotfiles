@@ -110,7 +110,7 @@ return {
 EOF
 
     local elev2_hex edge_hex
-    elev2_hex="$(blend "$base" "$text" 0.07)"
+    elev2_hex="$(blend "$base" "$text" 0.10)"
     edge_hex="$(blend "$base" "$text" 0.18)"
 
     cat > "$output/hyprlock.conf" <<EOF
@@ -336,9 +336,9 @@ Singleton {
     function _ink(a) { return Qt.rgba(text.r, text.g, text.b, a) }
 
     // Opaque — composited over the palette's own base.
-    readonly property color elev1:   Qt.tint(base, _ink(0.04))   // bar islands
-    readonly property color elev2:   Qt.tint(base, _ink(0.07))   // popouts, toasts, OSD, menus
-    readonly property color edge:    Qt.tint(base, _ink(0.18))   // the 1px border on everything
+    readonly property color elev1:   Qt.tint(base, _ink(Config.elev1Alpha))   // bar islands
+    readonly property color elev2:   Qt.tint(base, _ink(Config.elev2Alpha))   // popouts, toasts, OSD, menus
+    readonly property color edge:    Qt.tint(base, _ink(Config.edgeAlpha))   // the 1px border on everything
 
     // Translucent — composited over whatever they sit on.
     readonly property color edgeTop: _ink(0.07)   // 1px inner highlight, top edge of popouts

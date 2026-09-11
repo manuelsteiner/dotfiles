@@ -35,11 +35,19 @@ Scope {
                 readonly property int fullCount: root.toastNotifications.length > 3 ? 1 : root.toastNotifications.length
 
                 Repeater {
-                    model: root.toastNotifications.slice(0, toastColumn.fullCount)
+                    // Index-based lookup against the live array, not a plain
+                    // object-array model — passing JS objects through a
+                    // Repeater's array model boxes them, so `modelData` stops
+                    // being reference-equal to the array's own entries and
+                    // every `filter(n => n !== entry)` dismiss/expire call
+                    // silently no-ops (same failure mode NotificationPanel.qml
+                    // already hit and fixed the same way).
+                    model: toastColumn.fullCount
 
                     delegate: PopoutFrame {
                         id: toastCard
-                        required property var modelData
+                        required property int index
+                        readonly property var modelData: root.toastNotifications[index]
                         width: toastColumn.width
                         implicitHeight: toastContent.implicitHeight + 24
                         border.color: toastCard.modelData.urgency === NotificationUrgency.Critical

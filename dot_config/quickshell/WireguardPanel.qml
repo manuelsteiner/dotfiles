@@ -216,8 +216,9 @@ Scope {
 
         implicitHeight: (tunnel.up && tunnel.ip) ? 44 : 36
         radius: Config.radiusCell
-        color: tunnel.up ? Theme.elev2
-            : isFocused ? Theme.hover : "transparent"
+        color: tunnel.up
+            ? (isFocused ? Theme.press : Theme.elev2)
+            : (isFocused ? Theme.hover : "transparent")
         border.color: tunnel.up ? Theme.wireguardColor : "transparent"
         border.width: tunnel.up ? 1 : 0
         Behavior on color { ColorAnimation { duration: 80 } }

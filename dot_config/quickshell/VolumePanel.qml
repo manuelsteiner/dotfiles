@@ -160,8 +160,9 @@ Scope {
 
         implicitHeight: visible ? col.height + 16 : 0
         radius: Config.radiusCell
-        color: isDefault ? Theme.elev2
-            : isFocused ? Theme.hover : "transparent"
+        color: isDefault
+            ? (isFocused ? Theme.press : Theme.elev2)
+            : (isFocused ? Theme.hover : "transparent")
         border.color: isDefault ? Theme.volumeColor : "transparent"
         border.width: isDefault ? 1 : 0
         Behavior on color { ColorAnimation { duration: 80 } }

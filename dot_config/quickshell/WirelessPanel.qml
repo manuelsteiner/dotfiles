@@ -421,8 +421,9 @@ Scope {
             width: del.width
             height: 36
             radius: Config.radiusCell
-            color: network.connected ? Theme.elev2
-                : del.isFocused ? Theme.hover : "transparent"
+            color: network.connected
+                ? (del.isFocused ? Theme.press : Theme.elev2)
+                : (del.isFocused ? Theme.hover : "transparent")
             border.color: network.connected ? Theme.wirelessColor : "transparent"
             border.width: network.connected ? 1 : 0
             Behavior on color { ColorAnimation { duration: 80 } }

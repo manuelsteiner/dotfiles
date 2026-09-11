@@ -135,6 +135,17 @@ ShellRoot {
         if (except !== "btPanel")       root.btPanelVisible = false
         if (except !== "wgPanel")       root.wgPanelVisible = false
         if (except !== "wifiPanel")     root.wifiPanelVisible = false
+        if (except !== "controlCentre") root.controlCentreVisible = false
+    }
+
+    // ── Control centre state (D2 v1) ──
+    property bool controlCentreVisible: false
+
+    function toggleControlCentre(screen) {
+        var show = !root.controlCentreVisible
+        root.closeAllPanels(show ? "controlCentre" : undefined)
+        if (show) root.activePanelScreen = screen
+        root.controlCentreVisible = show
     }
 
     // Screen a popout was opened from — popouts only render on this one
@@ -353,29 +364,43 @@ ShellRoot {
             if (!Config.enableNotifications) return
             notification.tracked = true
 
-            // The underlying notification object closes itself once the
-            // sender's own expire_timeout elapses (many apps, e.g.
-            // notify-send, default to ~5s) — that's unrelated to whether the
-            // user has seen or dismissed it from the centre. Only drop it
-            // from the live toast layer here; `tracked = true` above keeps
-            // the object alive so it can keep showing in storedNotifications
-            // until the user explicitly dismisses it or clears all.
+            // `tracked = true` stops the object from being destroyed once
+            // closed, but does NOT freeze its data — a sender that WITHDRAWS
+            // its own notification (Element does this for pending-message
+            // notifications as soon as you open the app, not just on the
+            // sender's expire_timeout) clears the underlying object's
+            // properties, leaving a live-but-empty row in the centre. So the
+            // centre stores a plain-data SNAPSHOT of the fields it displays,
+            // taken right now while they're still valid, plus a `_live`
+            // reference used only for dismiss()/action invocation while that
+            // reference is still usable. Display never depends on the
+            // notification object's own state surviving closure.
+            var entry = {
+                id: notification.id,
+                appName: notification.appName,
+                appIcon: notification.appIcon,
+                summary: notification.summary,
+                body: notification.body,
+                urgency: notification.urgency ?? 1,
+                actions: notification.actions,
+                _live: notification
+            }
+
             notification.closed.connect(function() {
-                root.toastNotifications = root.toastNotifications.filter(n => n !== notification)
+                root.toastNotifications = root.toastNotifications.filter(n => n !== entry)
             })
 
             // Always store the notification (sorted by urgency)
             var stored = root.storedNotifications.slice()
-            var urgency = notification.urgency ?? 1
             var idx = 0
             for (; idx < stored.length; idx++) {
-                if ((stored[idx].urgency ?? 1) < urgency) break
+                if (stored[idx].urgency < entry.urgency) break
             }
-            stored.splice(idx, 0, notification)
+            stored.splice(idx, 0, entry)
             if (stored.length > Config.maxStoredNotifications) {
                 var dropped = stored.pop()
-                dropped.tracked = false
-                dropped.dismiss()
+                dropped._live.tracked = false
+                dropped._live.dismiss()
             }
             root.storedNotifications = stored
 
@@ -383,35 +408,35 @@ ShellRoot {
             // centre (stored above) only. Critical notifications bypass DND
             // (manual or auto-fullscreen); normal notifications are still
             // withheld while suppressed.
-            var isCritical = (notification.urgency ?? 1) === NotificationUrgency.Critical
-            var isLow = (notification.urgency ?? 1) === NotificationUrgency.Low
-            if (!isLow && (!root.notifSuppressed || isCritical) && stored.indexOf(notification) !== -1) {
-                var toasts = root.toastNotifications.filter(n => n !== notification)
-                toasts.unshift(notification)
+            var isCritical = entry.urgency === NotificationUrgency.Critical
+            var isLow = entry.urgency === NotificationUrgency.Low
+            if (!isLow && (!root.notifSuppressed || isCritical) && stored.indexOf(entry) !== -1) {
+                var toasts = root.toastNotifications.filter(n => n !== entry)
+                toasts.unshift(entry)
                 root.toastNotifications = toasts.slice(0, Math.max(0, Config.maxLiveNotificationToasts))
             }
         }
     }
 
     // Toast expired by timer – remove from toasts but keep in stored
-    function expireToast(notification) {
-        root.toastNotifications = root.toastNotifications.filter(n => n !== notification)
+    function expireToast(entry) {
+        root.toastNotifications = root.toastNotifications.filter(n => n !== entry)
     }
 
     // User explicitly dismissed a toast – remove from both
-    function dismissNotification(notification) {
-        notification.tracked = false
-        notification.dismiss()
-        root.toastNotifications = root.toastNotifications.filter(n => n !== notification)
-        root.storedNotifications = root.storedNotifications.filter(n => n !== notification)
+    function dismissNotification(entry) {
+        entry._live.tracked = false
+        entry._live.dismiss()
+        root.toastNotifications = root.toastNotifications.filter(n => n !== entry)
+        root.storedNotifications = root.storedNotifications.filter(n => n !== entry)
     }
 
     // Dismiss a single stored notification (from the panel)
-    function dismissStoredNotification(notification) {
-        notification.tracked = false
-        notification.dismiss()
-        root.toastNotifications = root.toastNotifications.filter(n => n !== notification)
-        root.storedNotifications = root.storedNotifications.filter(n => n !== notification)
+    function dismissStoredNotification(entry) {
+        entry._live.tracked = false
+        entry._live.dismiss()
+        root.toastNotifications = root.toastNotifications.filter(n => n !== entry)
+        root.storedNotifications = root.storedNotifications.filter(n => n !== entry)
         if (root.storedNotifications.length === 0) root.notifPanelVisible = false
     }
 
@@ -424,9 +449,8 @@ ShellRoot {
         root.notifPanelVisible = false
 
         for (var i = 0; i < notifications.length; i++) {
-            var notification = notifications[i]
-            notification.tracked = false
-            notification.dismiss()
+            notifications[i]._live.tracked = false
+            notifications[i]._live.dismiss()
         }
     }
 
@@ -453,4 +477,5 @@ ShellRoot {
     TooltipPanel {}
     NotificationToasts {}
     NotificationPanel {}
+    ControlCentrePanel {}
 }

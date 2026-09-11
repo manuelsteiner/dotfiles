@@ -78,6 +78,15 @@ Singleton {
     property int radiusIsland: 10
     property int radiusPopout: 14
     property bool popoutHalo: true
+
+    // Elevation ink alphas (see "Patch — lift the elevation scale"). `base`
+    // is pure black in every -oled palette, so these are the one place to
+    // tune how islands/popouts read against a dark wallpaper — never add a
+    // per-theme override instead.
+    property real elev1Alpha: 0.07
+    property real elev2Alpha: 0.10
+    property real edgeAlpha: 0.18
+
     property string osdPosition: "top" // "top", "center", "bottom"
     property string fontFamily: "Noto Nerd Font"
 
@@ -130,4 +139,14 @@ Singleton {
     property string bluetoothApp: "blueman-manager"
     property string wirelessToggleScript: ""
     property string bluetoothToggleScript: ""
+
+    // D2 control centre (v1, deliberately scoped down — see the design
+    // brief's own note that this is a feature project, not a restyle).
+    // When true, replaces the 7 individual status cells (volume, mic,
+    // ethernet, wifi, wireguard, bluetooth, notifications) with a single
+    // digest cell that opens a tabbed panel (Notifications/Audio/Network/
+    // Themes) with its own embedded content — Media (MPRIS) and clipboard
+    // history are not implemented.
+    property bool useControlCentre: false
+    property int controlCentreWidth: 320
 }
