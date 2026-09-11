@@ -111,12 +111,12 @@ Scope {
 
                         BarVolume { visible: Config.enableVolume; screen: barWindow.screen }
                         BarMicrophone { visible: Config.enableMicrophone; screen: barWindow.screen }
-                        BarBrightness { visible: Config.enableBrightness }
-                        BarEthernet { id: barEth; visible: Config.enableEthernet && (!Config.hideDisconnectedEthernet || barEth.up) }
+                        BarBrightness { visible: Config.enableBrightness; screen: barWindow.screen }
+                        BarEthernet { id: barEth; visible: Config.enableEthernet && (!Config.hideDisconnectedEthernet || barEth.up); screen: barWindow.screen }
                         BarWireless { id: barWifi; visible: Config.enableWireless && (!Config.hideDisconnectedWireless || barWifi.up); screen: barWindow.screen }
                         BarWireguard { id: barWg; visible: Config.enableWireguard && (!Config.hideDisconnectedWireguard || barWg.anyUp); screen: barWindow.screen }
                         BarBluetooth { id: barBt; visible: Config.enableBluetooth && (!Config.hideDisconnectedBluetooth || barBt.powered); screen: barWindow.screen }
-                        BarBattery { visible: Config.enableBattery }
+                        BarBattery { visible: Config.enableBattery; screen: barWindow.screen }
                         BarNotifications { visible: Config.enableNotifications; screen: barWindow.screen }
                         BarPower { visible: Config.enablePower; screen: barWindow.screen }
                     }

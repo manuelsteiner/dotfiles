@@ -34,10 +34,33 @@ Scope {
             property var connectedNetworks: networks.filter(function(n) { return n.connected })
             property var availableNetworks: networks.filter(function(n) { return !n.connected })
 
+            // D-9 keyboard traversal. Networks are plain data objects
+            // replaced wholesale on refresh, so focus is a position in the
+            // connected→available order, not object identity.
+            property int focusedIndex: -1
+            readonly property int totalNetworkCount: connectedNetworks.length + availableNetworks.length
+
+            function moveFocus(delta) {
+                if (totalNetworkCount === 0) return
+                focusedIndex = Math.max(0, Math.min(totalNetworkCount - 1, focusedIndex + delta))
+            }
+            function activateFocused() {
+                var connLen = connectedNetworks.length
+                var idx = focusedIndex
+                if (idx < 0) return
+                if (idx < connLen) {
+                    wifiDisconnectProc.running = true
+                } else {
+                    var n = availableNetworks[idx - connLen]
+                    if (n) connectNetwork(n.ssid, n.security)
+                }
+            }
+
             onVisibleChanged: {
                 if (visible) {
                     wifiRefresh.running = true
                     wifiScan.running = true
+                    focusedIndex = totalNetworkCount > 0 ? 0 : -1
                 } else {
                     wifiPanelWindow.pendingSsid = ""
                     wifiScanRefresh.stop()
@@ -233,6 +256,12 @@ Scope {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                 onClicked: root.wifiPanelVisible = false
+                focus: true
+                Keys.onEscapePressed: root.wifiPanelVisible = false
+                Keys.onUpPressed: wifiPanelWindow.moveFocus(-1)
+                Keys.onDownPressed: wifiPanelWindow.moveFocus(1)
+                Keys.onReturnPressed: wifiPanelWindow.activateFocused()
+                Keys.onEnterPressed: wifiPanelWindow.activateFocused()
             }
 
             PopoutFrame {
@@ -333,13 +362,16 @@ Scope {
                                     model: wifiPanelWindow.connectedNetworks
                                     delegate: WifiNetworkDelegate {
                                         required property var modelData
+                                        required property int index
                                         network: modelData
                                         connectedIp: wifiPanelWindow.connectedIp
                                         connectedSignalPct: wifiPanelWindow.connectedSignal
                                         pendingSsid: wifiPanelWindow.pendingSsid
+                                        isFocused: index === wifiPanelWindow.focusedIndex
                                         Layout.fillWidth: true
                                         onToggle: wifiDisconnectProc.running = true
                                         onSubmitPassword: pass => wifiPanelWindow.submitPassword(modelData.ssid, pass)
+                                        onHovered: wifiPanelWindow.focusedIndex = index
                                     }
                                 }
 
@@ -348,11 +380,15 @@ Scope {
                                     model: wifiPanelWindow.availableNetworks
                                     delegate: WifiNetworkDelegate {
                                         required property var modelData
+                                        required property int index
+                                        readonly property int globalIndex: wifiPanelWindow.connectedNetworks.length + index
                                         network: modelData
                                         pendingSsid: wifiPanelWindow.pendingSsid
+                                        isFocused: globalIndex === wifiPanelWindow.focusedIndex
                                         Layout.fillWidth: true
                                         onToggle: wifiPanelWindow.connectNetwork(modelData.ssid, modelData.security)
                                         onSubmitPassword: pass => wifiPanelWindow.submitPassword(modelData.ssid, pass)
+                                        onHovered: wifiPanelWindow.focusedIndex = globalIndex
                                     }
                                 }
                             }
@@ -371,8 +407,10 @@ Scope {
         property string connectedIp: ""
         property int connectedSignalPct: 0
         property string pendingSsid: ""
+        property bool isFocused: false
         signal toggle()
         signal submitPassword(string password)
+        signal hovered()
 
         property bool showPassword: pendingSsid !== "" && pendingSsid === network.ssid
 
@@ -384,7 +422,7 @@ Scope {
             height: 36
             radius: Config.radiusCell
             color: network.connected ? Theme.elev2
-                : ma.containsMouse ? Theme.hover : "transparent"
+                : del.isFocused ? Theme.hover : "transparent"
             border.color: network.connected ? Theme.wirelessColor : "transparent"
             border.width: network.connected ? 1 : 0
             Behavior on color { ColorAnimation { duration: 80 } }
@@ -424,7 +462,7 @@ Scope {
                     font { family: Config.fontFamily
                            pixelSize: del.network.connected && del.connectedIp ? 11 : 12
                            bold: del.network.connected }
-                    color: del.network.connected || ma.containsMouse ? Theme.text : Theme.subtle
+                    color: del.network.connected || del.isFocused ? Theme.text : Theme.subtle
                     Behavior on color { ColorAnimation { duration: 80 } }
                     elide: Text.ElideRight
                     maximumLineCount: 2
@@ -455,6 +493,7 @@ Scope {
                 id: ma
                 anchors.fill: parent
                 hoverEnabled: true
+                onEntered: del.hovered()
                 onClicked: del.toggle()
             }
         }

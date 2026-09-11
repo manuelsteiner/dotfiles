@@ -6,6 +6,7 @@ import QtQuick.Layouts
 BarCell {
     id: ethBlock
     Layout.alignment: Qt.AlignHCenter
+    property var screen: null
     property string iface: Config.ethernetInterface
     property bool up: false
     property string ipAddr: ""
@@ -81,7 +82,7 @@ BarCell {
                     ? ethBlock.iface
                       + (ethBlock.ipAddr ? "\n" + ethBlock.ipAddr : "")
                     : ethBlock.iface + " (disconnected)"
-                root.showTooltip("eth", tip, pos.y)
+                root.showTooltip("eth", tip, pos.y, ethBlock.screen)
             } else {
                 root.hideTooltip("eth")
             }

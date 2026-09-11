@@ -110,7 +110,7 @@ BarCell {
                 } else {
                     tip = btBlock.powered ? "No devices" : "Bluetooth off"
                 }
-                root.showTooltip("bt", tip, pos.y)
+                root.showTooltip("bt", tip, pos.y, btBlock.screen)
             } else {
                 root.hideTooltip("bt")
             }

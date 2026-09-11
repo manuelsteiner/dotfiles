@@ -126,10 +126,11 @@ Scope {
                         }
 
                         Rectangle {
-                            // Outlined and urgency-conditional, matching the
-                            // bar badge and the per-group ×N chip — a count
-                            // of routine notifications shouldn't carry the
-                            // same red as an actually critical one.
+                            // True outline — transparent fill, matching the
+                            // bar badge — and urgency-conditional like the
+                            // per-group ×N chip: a count of routine
+                            // notifications shouldn't carry the same red as
+                            // an actually critical one.
                             visible: root.storedNotifications.length > 0
                             width: Math.max(20, countText.implicitWidth + 8)
                             height: 20; radius: 10
@@ -289,18 +290,19 @@ Scope {
                                         }
 
                                         Rectangle {
+                                            // True outline, matching the bar badge.
                                             visible: groupDelegate.groupCount > 1
                                             width: countBadge.implicitWidth + 8
                                             height: 16; radius: Config.radiusCell
                                             color: "transparent"
                                             border.width: 1
-                                            border.color: Theme.edge
+                                            border.color: groupDelegate.primary.urgency === NotificationUrgency.Critical ? Theme.red : Theme.edge
                                             Text {
                                                 id: countBadge
                                                 anchors.centerIn: parent
                                                 text: "×" + groupDelegate.groupCount
                                                 font { family: Config.fontFamily; pixelSize: 10; bold: true; features: { "tnum": 1 } }
-                                                color: Theme.text
+                                                color: groupDelegate.primary.urgency === NotificationUrgency.Critical ? Theme.red : Theme.text
                                             }
                                             MouseArea {
                                                 anchors.fill: parent

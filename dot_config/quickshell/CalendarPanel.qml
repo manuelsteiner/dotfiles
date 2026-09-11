@@ -197,9 +197,14 @@ Scope {
                                 Layout.preferredHeight: 28
                                 radius: Config.radiusCell
                                 // Today is an accent edge + accent numeral, not a
-                                // filled block (rule 8: no colour inversion).
-                                color: !isToday && dayMA.containsMouse ? Theme.hover : "transparent"
-                                border.width: isToday || isFocused ? 1 : 0
+                                // filled block (rule 8: no colour inversion) — a
+                                // persistent marker, unlike keyboard focus below.
+                                // Keyboard focus mirrors plain mouse hover (surface
+                                // fill only, no border), matching PowerMenu/
+                                // TrayContextMenu/device panels: hover already
+                                // moves focusedIndex, so the two are the same state.
+                                color: !isToday && (dayMA.containsMouse || isFocused) ? Theme.hover : "transparent"
+                                border.width: isToday ? 1 : 0
                                 border.color: Theme.accent
                                 Behavior on color { ColorAnimation { duration: 80 } }
 
@@ -222,6 +227,7 @@ Scope {
                                     id: dayMA
                                     anchors.fill: parent
                                     hoverEnabled: true
+                                    onEntered: calWindow.focusedIndex = index
                                     onClicked: {
                                         if (parent.isPrev) calWindow.prevMonth()
                                         else if (parent.isNext) calWindow.nextMonth()

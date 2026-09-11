@@ -15,6 +15,7 @@ Scope {
             WlrLayershell.namespace: "qs-btpanel"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
             WlrLayershell.margins.left: Config.effectiveBarWidth + Config.gap
             anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"
@@ -25,11 +26,46 @@ Scope {
             property var connectedDevices: pairedDevices.filter(function(d) { return d.connected })
             property var disconnectedDevices: pairedDevices.filter(function(d) { return !d.connected })
 
+            // D-9 keyboard traversal. Devices are plain data objects replaced
+            // wholesale every refresh (~3s), not stable QObjects, so focus is
+            // tracked as a position in the connected→disconnected→nearby
+            // order rather than by object identity (which wouldn't survive
+            // a refresh).
+            property int focusedIndex: -1
+            readonly property int totalDeviceCount: connectedDevices.length + disconnectedDevices.length + nearbyDevices.length
+
+            function moveFocus(delta) {
+                if (totalDeviceCount === 0) return
+                focusedIndex = Math.max(0, Math.min(totalDeviceCount - 1, focusedIndex + delta))
+            }
+            function activateFocused() {
+                var connLen = connectedDevices.length
+                var discLen = disconnectedDevices.length
+                var idx = focusedIndex
+                if (idx < 0) return
+                if (idx < connLen) {
+                    btConnectProc.action = "disconnect"
+                    btConnectProc.mac = connectedDevices[idx].mac
+                    btConnectProc.running = true
+                } else if (idx < connLen + discLen) {
+                    btConnectProc.action = "connect"
+                    btConnectProc.mac = disconnectedDevices[idx - connLen].mac
+                    btConnectProc.running = true
+                } else {
+                    var nIdx = idx - connLen - discLen
+                    if (nIdx < nearbyDevices.length) {
+                        btPairConnectProc.mac = nearbyDevices[nIdx].mac
+                        btPairConnectProc.running = true
+                    }
+                }
+            }
+
             onVisibleChanged: {
                 if (visible) {
                     btRefresh.running = true
                     btScanProc.running = true
                     btScanRefreshTimer.restart()
+                    focusedIndex = totalDeviceCount > 0 ? 0 : -1
                 } else {
                     btScanProc.running = false
                     btScanRefreshTimer.stop()
@@ -177,6 +213,12 @@ Scope {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                 onClicked: root.btPanelVisible = false
+                focus: true
+                Keys.onEscapePressed: root.btPanelVisible = false
+                Keys.onUpPressed: btPanelWindow.moveFocus(-1)
+                Keys.onDownPressed: btPanelWindow.moveFocus(1)
+                Keys.onReturnPressed: btPanelWindow.activateFocused()
+                Keys.onEnterPressed: btPanelWindow.activateFocused()
             }
 
             PopoutFrame {
@@ -277,13 +319,16 @@ Scope {
                                     model: btPanelWindow.connectedDevices
                                     delegate: BtDeviceDelegate {
                                         required property var modelData
+                                        required property int index
                                         device: modelData
+                                        isFocused: index === btPanelWindow.focusedIndex
                                         Layout.fillWidth: true
                                         onToggle: {
                                             btConnectProc.action = "disconnect"
                                             btConnectProc.mac = modelData.mac
                                             btConnectProc.running = true
                                         }
+                                        onHovered: btPanelWindow.focusedIndex = index
                                     }
                                 }
 
@@ -292,13 +337,17 @@ Scope {
                                     model: btPanelWindow.disconnectedDevices
                                     delegate: BtDeviceDelegate {
                                         required property var modelData
+                                        required property int index
+                                        readonly property int globalIndex: btPanelWindow.connectedDevices.length + index
                                         device: modelData
+                                        isFocused: globalIndex === btPanelWindow.focusedIndex
                                         Layout.fillWidth: true
                                         onToggle: {
                                             btConnectProc.action = "connect"
                                             btConnectProc.mac = modelData.mac
                                             btConnectProc.running = true
                                         }
+                                        onHovered: btPanelWindow.focusedIndex = globalIndex
                                     }
                                 }
 
@@ -307,12 +356,17 @@ Scope {
                                     model: btPanelWindow.nearbyDevices
                                     delegate: BtNearbyDelegate {
                                         required property var modelData
+                                        required property int index
+                                        readonly property int globalIndex: btPanelWindow.connectedDevices.length
+                                            + btPanelWindow.disconnectedDevices.length + index
                                         device: modelData
+                                        isFocused: globalIndex === btPanelWindow.focusedIndex
                                         Layout.fillWidth: true
                                         onConnect: {
                                             btPairConnectProc.mac = modelData.mac
                                             btPairConnectProc.running = true
                                         }
+                                        onHovered: btPanelWindow.focusedIndex = globalIndex
                                     }
                                 }
                             }
@@ -328,12 +382,14 @@ Scope {
     component BtDeviceDelegate: Rectangle {
         id: del
         property var device
+        property bool isFocused: false
         signal toggle()
+        signal hovered()
 
         implicitHeight: 36
         radius: Config.radiusCell
         color: device.connected ? Theme.elev2
-            : ma.containsMouse ? Theme.hover : "transparent"
+            : isFocused ? Theme.hover : "transparent"
         border.color: device.connected ? Theme.bluetoothColor : "transparent"
         border.width: device.connected ? 1 : 0
         Behavior on color { ColorAnimation { duration: 80 } }
@@ -370,7 +426,7 @@ Scope {
                 anchors.verticalCenter: parent.verticalCenter
                 text: del.device.name
                 font { family: Config.fontFamily; pixelSize: 12 }
-                color: del.device.connected || ma.containsMouse ? Theme.text : Theme.subtle
+                color: del.device.connected || del.isFocused ? Theme.text : Theme.subtle
                 Behavior on color { ColorAnimation { duration: 80 } }
                 elide: Text.ElideRight
             }
@@ -402,6 +458,7 @@ Scope {
             id: ma
             anchors.fill: parent
             hoverEnabled: true
+            onEntered: del.hovered()
             onClicked: del.toggle()
         }
     }
@@ -409,11 +466,13 @@ Scope {
     component BtNearbyDelegate: Rectangle {
         id: ndel
         property var device
+        property bool isFocused: false
         signal connect()
+        signal hovered()
 
         implicitHeight: 36
         radius: Config.radiusCell
-        color: nma.containsMouse ? Theme.hover : "transparent"
+        color: isFocused ? Theme.hover : "transparent"
         Behavior on color { ColorAnimation { duration: 80 } }
 
         Item {
@@ -435,7 +494,7 @@ Scope {
                         return "󰂯"
                     }
                     font { family: Config.fontFamily; pixelSize: 14 }
-                    color: nma.containsMouse ? Theme.text : Theme.subtle
+                    color: ndel.isFocused ? Theme.text : Theme.subtle
                     Behavior on color { ColorAnimation { duration: 80 } }
                 }
             }
@@ -446,7 +505,7 @@ Scope {
                 anchors.verticalCenter: parent.verticalCenter
                 text: ndel.device.name
                 font { family: Config.fontFamily; pixelSize: 12 }
-                color: nma.containsMouse ? Theme.text : Theme.subtle
+                color: ndel.isFocused ? Theme.text : Theme.subtle
                 Behavior on color { ColorAnimation { duration: 80 } }
                 elide: Text.ElideRight
             }
@@ -456,6 +515,7 @@ Scope {
             id: nma
             anchors.fill: parent
             hoverEnabled: true
+            onEntered: ndel.hovered()
             onClicked: ndel.connect()
         }
     }

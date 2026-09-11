@@ -70,7 +70,7 @@ BarCell {
         onContainsMouseChanged: {
             if (containsMouse) {
                 var pos = parent.mapToItem(null, 0, parent.height / 2)
-                root.showTooltip("clock", clockBlock.tooltipStr, pos.y)
+                root.showTooltip("clock", clockBlock.tooltipStr, pos.y, clockBlock.screen)
             } else {
                 root.hideTooltip("clock")
             }

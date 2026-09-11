@@ -6,6 +6,7 @@ import QtQuick.Layouts
 BarCell {
     id: brightBlock
     Layout.alignment: Qt.AlignHCenter
+    property var screen: null
     height: Config.enableBrightnessBar ? 42 : 36
     property real bright: root.brightOsdValue
     hovered: brightMA.containsMouse
@@ -61,7 +62,7 @@ BarCell {
             if (containsMouse) {
                 var pos = parent.mapToItem(null, 0, parent.height / 2)
                 root.showTooltip("bright",
-                    Math.round(brightBlock.bright * 100) + "%", pos.y)
+                    Math.round(brightBlock.bright * 100) + "%", pos.y, brightBlock.screen)
             } else {
                 root.hideTooltip("bright")
             }

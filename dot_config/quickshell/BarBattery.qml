@@ -6,6 +6,7 @@ import QtQuick.Layouts
 BarCell {
     id: batBlock
     Layout.alignment: Qt.AlignHCenter
+    property var screen: null
 
     property var bat: UPower.displayDevice
     property real level: (bat?.percentage ?? -1) < 0 ? -1 : bat.percentage * 100
@@ -87,7 +88,7 @@ BarCell {
                         tip += "\n" + Math.floor(me / 60) + "h " + (me % 60) + "m remaining"
                     }
                 }
-                root.showTooltip("bat", tip, pos.y)
+                root.showTooltip("bat", tip, pos.y, batBlock.screen)
             } else {
                 root.hideTooltip("bat")
             }

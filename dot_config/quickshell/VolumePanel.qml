@@ -15,6 +15,7 @@ Scope {
             WlrLayershell.namespace: "qs-volumepanel"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
             WlrLayershell.margins.left: Config.effectiveBarWidth + Config.gap
             anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"
@@ -29,10 +30,54 @@ Scope {
                 }
             }
 
+            // D-9 keyboard traversal. Default sink first, then the rest —
+            // matches the two-Repeater display order below. A plain array of
+            // QObjects used only for index arithmetic, never as a model.
+            readonly property var sinkNodes: {
+                var def = []
+                var others = []
+                for (var i = 0; i < Pipewire.nodes.count; i++) {
+                    var n = Pipewire.nodes.values[i]
+                    if (!n.isSink || n.isStream) continue
+                    if (n === Pipewire.defaultAudioSink) def.push(n)
+                    else others.push(n)
+                }
+                return def.concat(others)
+            }
+            property int focusedIndex: -1
+            onVisibleChanged: if (visible) volPanelWindow.focusedIndex = volPanelWindow.sinkNodes.length > 0 ? 0 : -1
+
+            function moveFocus(delta) {
+                var n = volPanelWindow.sinkNodes.length
+                if (n === 0) return
+                volPanelWindow.focusedIndex = Math.max(0, Math.min(n - 1, volPanelWindow.focusedIndex + delta))
+            }
+            function focusedNode() {
+                var idx = volPanelWindow.focusedIndex
+                return idx >= 0 && idx < volPanelWindow.sinkNodes.length ? volPanelWindow.sinkNodes[idx] : null
+            }
+            function activateFocused() {
+                var node = volPanelWindow.focusedNode()
+                if (node && node !== Pipewire.defaultAudioSink) Pipewire.preferredDefaultAudioSink = node
+            }
+            function adjustFocusedVolume(delta) {
+                var node = volPanelWindow.focusedNode()
+                if (!node?.audio) return
+                root.setPanelVolume(node, node.audio.volume + delta)
+            }
+
             MouseArea {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                 onClicked: root.volumePanelVisible = false
+                focus: true
+                Keys.onEscapePressed: root.volumePanelVisible = false
+                Keys.onUpPressed: volPanelWindow.moveFocus(-1)
+                Keys.onDownPressed: volPanelWindow.moveFocus(1)
+                Keys.onLeftPressed: volPanelWindow.adjustFocusedVolume(-0.05)
+                Keys.onRightPressed: volPanelWindow.adjustFocusedVolume(0.05)
+                Keys.onReturnPressed: volPanelWindow.activateFocused()
+                Keys.onEnterPressed: volPanelWindow.activateFocused()
             }
 
             PopoutFrame {
@@ -67,10 +112,12 @@ Scope {
                             required property var modelData
                             node: modelData
                             isDefault: modelData === Pipewire.defaultAudioSink
+                            isFocused: modelData === volPanelWindow.focusedNode()
                             visible: modelData.isSink && !modelData.isStream && isDefault
                             Layout.fillWidth: true
                             Layout.preferredHeight: visible ? implicitHeight : 0
                             onSetDefault: Pipewire.preferredDefaultAudioSink = modelData
+                            onHovered: volPanelWindow.focusedIndex = volPanelWindow.sinkNodes.indexOf(modelData)
                         }
                     }
 
@@ -81,10 +128,12 @@ Scope {
                             required property var modelData
                             node: modelData
                             isDefault: modelData === Pipewire.defaultAudioSink
+                            isFocused: modelData === volPanelWindow.focusedNode()
                             visible: modelData.isSink && !modelData.isStream && !isDefault
                             Layout.fillWidth: true
                             Layout.preferredHeight: visible ? implicitHeight : 0
                             onSetDefault: Pipewire.preferredDefaultAudioSink = modelData
+                            onHovered: volPanelWindow.focusedIndex = volPanelWindow.sinkNodes.indexOf(modelData)
                         }
                     }
                 }
@@ -97,9 +146,13 @@ Scope {
         id: del
         property var node
         property bool isDefault: false
+        // Hover already syncs into this via the hovered() signal below, so
+        // it also carries keyboard-navigated focus — one flag for both.
+        property bool isFocused: false
         property real nodeVol: node.audio?.volume || 0
         property bool nodeMuted: node.audio?.muted ?? false
         signal setDefault()
+        signal hovered()
 
         function setVolume(value) {
             root.setPanelVolume(del.node, value)
@@ -108,7 +161,7 @@ Scope {
         implicitHeight: visible ? col.height + 16 : 0
         radius: Config.radiusCell
         color: isDefault ? Theme.elev2
-            : ma.containsMouse ? Theme.hover : "transparent"
+            : isFocused ? Theme.hover : "transparent"
         border.color: isDefault ? Theme.volumeColor : "transparent"
         border.width: isDefault ? 1 : 0
         Behavior on color { ColorAnimation { duration: 80 } }
@@ -144,7 +197,7 @@ Scope {
                     anchors.verticalCenter: parent.verticalCenter
                     text: del.node.description || del.node.name || "Unknown"
                     font { family: Config.fontFamily; pixelSize: 12 }
-                    color: del.isDefault || ma.containsMouse ? Theme.text : Theme.subtle
+                    color: del.isDefault || del.isFocused ? Theme.text : Theme.subtle
                     Behavior on color { ColorAnimation { duration: 80 } }
                     elide: Text.ElideRight
                 }
@@ -154,7 +207,7 @@ Scope {
                     id: volText
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: ma.containsMouse || ma.adjustingVolume
+                    visible: del.isFocused || ma.adjustingVolume
                     text: Math.round(del.nodeVol * 100) + "%"
                     font { family: Config.fontFamily; pixelSize: 11; weight: Font.Medium; features: { "tnum": 1 } }
                     color: del.nodeMuted ? Theme.muted : Theme.subtle
@@ -164,7 +217,7 @@ Scope {
             Rectangle {
                 id: volumeSlider
                 width: parent.width; height: 5; radius: 2.5
-                color: ma.containsMouse ? Theme.hover : Theme.divider
+                color: del.isFocused ? Theme.hover : Theme.divider
                 Rectangle {
                     width: parent.width * Math.min(del.nodeVol, 1.0)
                     height: parent.height; radius: parent.radius
@@ -180,6 +233,7 @@ Scope {
             anchors.fill: parent
             hoverEnabled: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onEntered: del.hovered()
             property bool adjustingVolume: false
             property bool adjustedVolume: false
             function isOverVolumeSlider(mouse) {

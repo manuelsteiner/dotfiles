@@ -121,7 +121,7 @@ BarCell {
                       + (netBlock.signal > 0 ? " (" + netBlock.signal + "%)" : "")
                       + (netBlock.ipAddr ? "\n" + netBlock.ipAddr : "")
                     : "Disconnected"
-                root.showTooltip("net", tip, pos.y)
+                root.showTooltip("net", tip, pos.y, netBlock.screen)
             } else {
                 root.hideTooltip("net")
             }

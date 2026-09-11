@@ -92,7 +92,7 @@ BarCell {
                 var pos = parent.mapToItem(null, 0, parent.height / 2)
                 root.showTooltip("vol",
                     Math.round(volBlock.vol * 100) + "%"
-                    + (volBlock.muted ? " (muted)" : ""), pos.y)
+                    + (volBlock.muted ? " (muted)" : ""), pos.y, volBlock.screen)
             } else {
                 root.hideTooltip("vol")
             }

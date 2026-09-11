@@ -15,6 +15,7 @@ Scope {
             WlrLayershell.namespace: "qs-wgpanel"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
             WlrLayershell.margins.left: Config.effectiveBarWidth + Config.gap
             anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"
@@ -22,6 +23,34 @@ Scope {
             property var tunnels: []
             property var upTunnels: tunnels.filter(function(t) { return t.up })
             property var downTunnels: tunnels.filter(function(t) { return !t.up })
+
+            // D-9 keyboard traversal. Tunnels are plain data objects replaced
+            // wholesale on refresh, so focus is a position in the up→down
+            // order, not object identity.
+            property int focusedIndex: -1
+            readonly property int totalTunnelCount: upTunnels.length + downTunnels.length
+
+            function moveFocus(delta) {
+                if (totalTunnelCount === 0) return
+                focusedIndex = Math.max(0, Math.min(totalTunnelCount - 1, focusedIndex + delta))
+            }
+            function activateFocused() {
+                var upLen = upTunnels.length
+                var idx = focusedIndex
+                if (idx < 0) return
+                if (idx < upLen) {
+                    wgToggleProc.action = "down"
+                    wgToggleProc.iface = upTunnels[idx].iface
+                    wgToggleProc.running = true
+                } else {
+                    var t = downTunnels[idx - upLen]
+                    if (t) {
+                        wgToggleProc.action = "up"
+                        wgToggleProc.iface = t.iface
+                        wgToggleProc.running = true
+                    }
+                }
+            }
 
             function buildRefreshCmd() {
                 var parts = []
@@ -38,7 +67,10 @@ Scope {
             }
 
             onVisibleChanged: {
-                if (visible) wgRefresh.running = true
+                if (visible) {
+                    wgRefresh.running = true
+                    focusedIndex = totalTunnelCount > 0 ? 0 : -1
+                }
             }
 
             Process {
@@ -92,6 +124,12 @@ Scope {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                 onClicked: root.wgPanelVisible = false
+                focus: true
+                Keys.onEscapePressed: root.wgPanelVisible = false
+                Keys.onUpPressed: wgPanelWindow.moveFocus(-1)
+                Keys.onDownPressed: wgPanelWindow.moveFocus(1)
+                Keys.onReturnPressed: wgPanelWindow.activateFocused()
+                Keys.onEnterPressed: wgPanelWindow.activateFocused()
             }
 
             PopoutFrame {
@@ -133,13 +171,16 @@ Scope {
                         model: wgPanelWindow.upTunnels
                         delegate: WgTunnelDelegate {
                             required property var modelData
+                            required property int index
                             tunnel: modelData
+                            isFocused: index === wgPanelWindow.focusedIndex
                             Layout.fillWidth: true
                             onToggle: {
                                 wgToggleProc.action = "down"
                                 wgToggleProc.iface = modelData.iface
                                 wgToggleProc.running = true
                             }
+                            onHovered: wgPanelWindow.focusedIndex = index
                         }
                     }
 
@@ -148,13 +189,17 @@ Scope {
                         model: wgPanelWindow.downTunnels
                         delegate: WgTunnelDelegate {
                             required property var modelData
+                            required property int index
+                            readonly property int globalIndex: wgPanelWindow.upTunnels.length + index
                             tunnel: modelData
+                            isFocused: globalIndex === wgPanelWindow.focusedIndex
                             Layout.fillWidth: true
                             onToggle: {
                                 wgToggleProc.action = "up"
                                 wgToggleProc.iface = modelData.iface
                                 wgToggleProc.running = true
                             }
+                            onHovered: wgPanelWindow.focusedIndex = globalIndex
                         }
                     }
                 }
@@ -165,12 +210,14 @@ Scope {
     component WgTunnelDelegate: Rectangle {
         id: del
         property var tunnel
+        property bool isFocused: false
         signal toggle()
+        signal hovered()
 
         implicitHeight: (tunnel.up && tunnel.ip) ? 44 : 36
         radius: Config.radiusCell
         color: tunnel.up ? Theme.elev2
-            : ma.containsMouse ? Theme.hover : "transparent"
+            : isFocused ? Theme.hover : "transparent"
         border.color: tunnel.up ? Theme.wireguardColor : "transparent"
         border.width: tunnel.up ? 1 : 0
         Behavior on color { ColorAnimation { duration: 80 } }
@@ -203,7 +250,7 @@ Scope {
                 font { family: Config.fontFamily
                        pixelSize: del.tunnel.up && del.tunnel.ip ? 11 : 12
                        bold: del.tunnel.up }
-                color: del.tunnel.up || ma.containsMouse ? Theme.text : Theme.subtle
+                color: del.tunnel.up || del.isFocused ? Theme.text : Theme.subtle
                 Behavior on color { ColorAnimation { duration: 80 } }
                 elide: Text.ElideRight
                 maximumLineCount: 2
@@ -223,6 +270,7 @@ Scope {
             id: ma
             anchors.fill: parent
             hoverEnabled: true
+            onEntered: del.hovered()
             onClicked: del.toggle()
         }
     }

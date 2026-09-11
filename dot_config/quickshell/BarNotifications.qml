@@ -42,7 +42,7 @@ BarCell {
         width: Math.max(14, badgeText.implicitWidth + 6)
         height: 14
         radius: 7
-        color: Theme.elev2
+        color: "transparent"
         border.width: 1
         border.color: bellBlock.anyCritical ? Theme.red : Theme.edge
 
@@ -76,7 +76,7 @@ BarCell {
                     : "Notifications"
                 if (root.storedNotifications.length > 0)
                     tip += " (" + root.storedNotifications.length + ")"
-                root.showTooltip("notif", tip, pos.y)
+                root.showTooltip("notif", tip, pos.y, bellBlock.screen)
             } else {
                 root.hideTooltip("notif")
             }

@@ -250,6 +250,9 @@ ShellRoot {
     property real tooltipY: 0
     property bool tooltipVisible: false
     property string _tooltipSource: ""
+    // Screen the tooltip was raised from — same scoping as activePanelScreen,
+    // so a hover on one monitor doesn't ghost a tooltip onto every other one.
+    property var tooltipScreen: null
 
     Timer {
         id: tooltipHideTimer
@@ -257,7 +260,7 @@ ShellRoot {
         onTriggered: root.tooltipVisible = false
     }
 
-    function showTooltip(sourceId, text, globalY) {
+    function showTooltip(sourceId, text, globalY, screen) {
         // Suppress tooltip when the corresponding popup is already open
         if ((sourceId === "vol"    && root.volumePanelVisible) ||
             (sourceId === "mic"    && root.micPanelVisible)    ||
@@ -273,6 +276,7 @@ ShellRoot {
         root._tooltipSource = sourceId
         root.tooltipText = text
         root.tooltipY = globalY
+        root.tooltipScreen = screen
         root.tooltipVisible = true
     }
 

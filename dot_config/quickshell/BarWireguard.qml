@@ -128,7 +128,7 @@ BarCell {
                     }
                 }
                 var tip = lines.length > 0 ? lines.join("\n") : "No tunnels configured"
-                root.showTooltip("wg", tip, pos.y)
+                root.showTooltip("wg", tip, pos.y, wgBlock.screen)
             } else {
                 root.hideTooltip("wg")
             }

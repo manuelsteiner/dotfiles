@@ -90,7 +90,7 @@ BarCell {
                 var pos = parent.mapToItem(null, 0, parent.height / 2)
                 root.showTooltip("mic",
                     Math.round(micBlock.vol * 100) + "%"
-                    + (micBlock.muted ? " (muted)" : ""), pos.y)
+                    + (micBlock.muted ? " (muted)" : ""), pos.y, micBlock.screen)
             } else {
                 root.hideTooltip("mic")
             }

@@ -41,7 +41,7 @@ Scope {
             onVisibleChanged: {
                 if (visible) {
                     menuOpacity = 0
-                    mainFocusedIndex = 0
+                    mainFocusedIndex = menuWindow.firstNonSeparatorIndex(rootMenuOpener.children.values)
                     subFocusedIndex = -1
                     dismissGrabTimer.restart()
                     menuFadeTimer.restart()
@@ -65,19 +65,40 @@ Scope {
             }
 
             // D-9 keyboard traversal: operates on the submenu list when one is
-            // open, otherwise the main list.
+            // open, otherwise the main list. QsMenuOpener.children is an
+            // UntypedObjectModel (a QAbstractListModel), not a plain array —
+            // it has no .length/index access of its own, only .values (a
+            // QObjectList that does). Returning the model itself here made
+            // entries.length undefined, so the very first arrow press turned
+            // focusedIndex into NaN and every press after that was a no-op.
             function activeEntries() {
-                return submenuHandle !== null ? submenuOpener.children : rootMenuOpener.children
+                return submenuHandle !== null ? submenuOpener.children.values : rootMenuOpener.children.values
             }
 
+            // Steps past separators in one keypress instead of landing on them
+            // (a divider isn't a selectable row, so it shouldn't cost a press).
             function moveFocus(delta) {
                 var entries = menuWindow.activeEntries()
                 if (!entries || entries.length === 0) return
                 var isSub = submenuHandle !== null
                 var idx = isSub ? subFocusedIndex : mainFocusedIndex
-                idx = Math.max(0, Math.min(entries.length - 1, (idx < 0 ? 0 : idx) + delta))
-                if (isSub) subFocusedIndex = idx
-                else mainFocusedIndex = idx
+                if (idx < 0) idx = 0
+                var next = idx
+                while (true) {
+                    var candidate = next + delta
+                    if (candidate < 0 || candidate >= entries.length) break
+                    next = candidate
+                    if (!entries[next].isSeparator) break
+                }
+                if (isSub) subFocusedIndex = next
+                else mainFocusedIndex = next
+            }
+
+            function firstNonSeparatorIndex(entries) {
+                for (var i = 0; i < entries.length; i++) {
+                    if (!entries[i].isSeparator) return i
+                }
+                return entries.length > 0 ? 0 : -1
             }
 
             function activateFocused() {

@@ -59,7 +59,7 @@ Column {
                     if (containsMouse) {
                         var pos = parent.mapToItem(null, 0, parent.height / 2)
                         root.showTooltip("tray-" + index,
-                            modelData.tooltipTitle || modelData.title, pos.y)
+                            modelData.tooltipTitle || modelData.title, pos.y, trayColumn.screen)
                     } else {
                         root.hideTooltip("tray-" + index)
                     }

@@ -8,7 +8,7 @@ Scope {
         PanelWindow {
             property var modelData
             screen: modelData
-            visible: root.tooltipVisible && root.tooltipText !== ""
+            visible: root.tooltipVisible && root.tooltipText !== "" && modelData === root.tooltipScreen
             WlrLayershell.namespace: "qs-tooltip"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
