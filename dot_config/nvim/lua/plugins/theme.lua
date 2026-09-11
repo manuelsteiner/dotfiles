@@ -53,11 +53,8 @@ local function apply_oled_ui()
 
     set_background({
         "SnacksNormal", "SnacksNormalNC", "SnacksPicker", "SnacksPickerBox",
-        "SnacksPickerInput", "SnacksPickerList",
+        "SnacksPickerInput", "SnacksPickerList", "SnacksPickerPreview",
     }, surface, true)
-    -- The preview is code, so keep it on the editor canvas. Inputs and result
-    -- lists remain raised so their boundary is still obvious on OLED.
-    set_background({ "SnacksPickerPreview" }, "#000000", true)
     set_background({ "SnacksPickerListCursorLine", "SnacksPickerPreviewCursorLine" }, selection, true)
 end
 
