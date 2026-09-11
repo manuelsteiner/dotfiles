@@ -68,21 +68,24 @@ local function apply_oled_ui()
     set_background({ "SnacksPickerListCursorLine", "SnacksPickerPreviewCursorLine" }, selection, true)
 end
 
+local oled_preview_namespace = vim.api.nvim_create_namespace("dotfiles_oled_snacks_preview")
+
 local function apply_oled_preview_columns()
-    local groups = { "Normal", "SignColumn", "FoldColumn", "LineNr", "EndOfBuffer" }
+    local surface = active_theme.highlight_low or "#18181a"
+    local groups = {
+        "Normal", "SignColumn", "FoldColumn", "LineNr", "EndOfBuffer",
+        "SnacksPickerPreview",
+    }
     for _, win in ipairs(vim.api.nvim_list_wins()) do
         if vim.w[win].snacks_picker_preview then
-            local entries = {}
-            for entry in vim.gsplit(vim.wo[win].winhighlight, ",", { plain = true, trimempty = true }) do
-                local source = entry:match("^([^:]+):")
-                if not vim.tbl_contains(groups, source) then
-                    table.insert(entries, entry)
-                end
-            end
             for _, group in ipairs(groups) do
-                table.insert(entries, group .. ":SnacksPickerPreview")
+                local highlight = resolved_highlight(group)
+                highlight.default = nil
+                highlight.link = nil
+                highlight.bg = surface
+                vim.api.nvim_set_hl(oled_preview_namespace, group, highlight)
             end
-            vim.wo[win].winhighlight = table.concat(entries, ",")
+            vim.api.nvim_win_set_hl_ns(win, oled_preview_namespace)
         end
     end
 end
