@@ -55,11 +55,21 @@ local function apply_oled_ui()
         "SnacksNormal", "SnacksNormalNC", "SnacksPicker", "SnacksPickerBox",
         "SnacksPickerInput", "SnacksPickerList", "SnacksPickerPreview",
     }, surface, true)
+    local preview = resolved_highlight("Normal")
+    preview.default = nil
+    preview.link = nil
+    preview.bg = surface
+    vim.api.nvim_set_hl(0, "SnacksPickerPreview", preview)
+    local prompt = resolved_highlight("Special")
+    prompt.default = nil
+    prompt.link = nil
+    prompt.bg = surface
+    vim.api.nvim_set_hl(0, "SnacksPickerPrompt", prompt)
     set_background({ "SnacksPickerListCursorLine", "SnacksPickerPreviewCursorLine" }, selection, true)
 end
 
 local function apply_oled_preview_columns()
-    local groups = { "SignColumn", "FoldColumn", "LineNr", "EndOfBuffer" }
+    local groups = { "Normal", "SignColumn", "FoldColumn", "LineNr", "EndOfBuffer" }
     for _, win in ipairs(vim.api.nvim_list_wins()) do
         if vim.w[win].snacks_picker_preview then
             local entries = {}
