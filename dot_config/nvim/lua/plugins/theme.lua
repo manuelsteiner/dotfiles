@@ -58,6 +58,25 @@ local function apply_oled_ui()
     set_background({ "SnacksPickerListCursorLine", "SnacksPickerPreviewCursorLine" }, selection, true)
 end
 
+local function apply_oled_preview_columns()
+    local groups = { "SignColumn", "FoldColumn", "LineNr", "EndOfBuffer" }
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.w[win].snacks_picker_preview then
+            local entries = {}
+            for entry in vim.gsplit(vim.wo[win].winhighlight, ",", { plain = true, trimempty = true }) do
+                local source = entry:match("^([^:]+):")
+                if not vim.tbl_contains(groups, source) then
+                    table.insert(entries, entry)
+                end
+            end
+            for _, group in ipairs(groups) do
+                table.insert(entries, group .. ":SnacksPickerPreview")
+            end
+            vim.wo[win].winhighlight = table.concat(entries, ",")
+        end
+    end
+end
+
 local themes = {
     ["rose-pine"] = {
         "rose-pine/neovim",
@@ -125,10 +144,20 @@ spec.config = function()
     vim.cmd.colorscheme(name)
     if oled then
         apply_oled_ui()
+        local oled_preview_group = vim.api.nvim_create_augroup("dotfiles_oled_preview_surface", { clear = true })
+        vim.api.nvim_create_autocmd({ "WinNew", "BufWinEnter" }, {
+            group = oled_preview_group,
+            callback = function()
+                vim.defer_fn(apply_oled_preview_columns, 50)
+            end,
+        })
         vim.api.nvim_create_autocmd("VimEnter", {
             once = true,
             callback = function()
-                vim.schedule(apply_oled_ui)
+                vim.schedule(function()
+                    apply_oled_ui()
+                    apply_oled_preview_columns()
+                end)
             end,
         })
     end
