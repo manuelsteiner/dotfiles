@@ -77,6 +77,7 @@ Scope {
                     BarWorkspaces {
                         id: wsItem
                         anchors.centerIn: parent
+                        screen: barWindow.screen
                     }
                 }
 

@@ -9,14 +9,17 @@ Item {
     implicitWidth: wsColumn.implicitWidth
     implicitHeight: wsColumn.implicitHeight
 
+    // Each bar is tied to one QScreen. Its monitor owns the authoritative
+    // activeWorkspace; a workspace's monitor only says where it lives.
+    property var screen
+    readonly property var monitor: screen ? Hyprland.monitorFor(screen) : null
+    readonly property int activeWorkspaceId: monitor && monitor.activeWorkspace ? monitor.activeWorkspace.id : -1
     property bool bgStyle: Config.workspaceStyle === "background"
     property bool outlineStyle: Config.workspaceStyle === "outline"
 
     property int activeIndex: {
         for (var i = 0; i < Config.workspaces.length; i++) {
-            var ws = Config.workspaces[i].ws
-            if (Hyprland.workspaces.values.some(w => w.id === ws && w.focused))
-                return i
+            if (Config.workspaces[i].ws === activeWorkspaceId) return i
         }
         return 0
     }
