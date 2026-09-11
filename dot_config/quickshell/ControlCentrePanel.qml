@@ -3,6 +3,7 @@ import Quickshell.Wayland
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 import Quickshell.Services.Notifications
+import Quickshell.Services.Mpris
 import QtQuick
 import QtQuick.Layouts
 
@@ -30,7 +31,7 @@ Scope {
             anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"
 
-            property int activeTab: 0 // 0 notifications, 1 audio, 2 network, 3 themes
+            property int activeTab: 0 // 0 notifications, 1 audio, 2 media, 3 network, 4 themes
             property int networkSubTab: 0 // 0 ethernet, 1 wifi, 2 bluetooth
 
             readonly property int audioSourceCount: {
@@ -42,6 +43,26 @@ Scope {
                 return c
             }
 
+            // ── Media (MPRIS) ──
+            // Mpris.players is an UntypedObjectModel, not a plain array — the
+            // same shape as Pipewire.nodes elsewhere in this file.
+            readonly property var mprisPlayers: Mpris.players.values
+            property int activePlayerIndex: 0
+            readonly property var activePlayer: mprisPlayers.length > 0
+                ? mprisPlayers[Math.min(activePlayerIndex, mprisPlayers.length - 1)]
+                : null
+
+            // Promoted to the top of the whole panel, not just the Media tab:
+            // whichever player is actually playing, or — with only one
+            // candidate to begin with — that one even while paused. With two
+            // or more idle players there's no unambiguous pick, so none is
+            // promoted.
+            readonly property var nowPlayingPlayer: {
+                for (var i = 0; i < mprisPlayers.length; i++) {
+                    if (mprisPlayers[i].isPlaying) return mprisPlayers[i]
+                }
+                return mprisPlayers.length === 1 ? mprisPlayers[0] : null
+            }
 
             MouseArea {
                 anchors.fill: parent
@@ -52,7 +73,7 @@ Scope {
             }
 
             // ── Network polling (only while the Network tab is actually open) ──
-            property bool networkPollActive: ccWindow.visible && ccWindow.activeTab === 2
+            property bool networkPollActive: ccWindow.visible && ccWindow.activeTab === 3
 
             // ── Ethernet ──
             property bool ethUp: false
@@ -293,7 +314,12 @@ Scope {
             }
             function refreshThemes() { themeListProc.running = true; currentThemeProc.running = true }
 
-            onVisibleChanged: if (visible) { ccWindow.activeTab = 0; ccWindow.refreshThemes() }
+            onVisibleChanged: if (visible) {
+                ccWindow.activeTab = 0
+                ccWindow.refreshThemes()
+                var playing = ccWindow.mprisPlayers.findIndex(function(p) { return p.isPlaying })
+                ccWindow.activePlayerIndex = playing >= 0 ? playing : 0
+            }
 
             // ── Quick actions ──
             Process { id: screenshotProc; command: ["sh", "-c",
@@ -315,6 +341,81 @@ Scope {
                     anchors.fill: parent
                     anchors.margins: 12
                     spacing: 10
+
+                    // Now playing — promoted above everything else, including
+                    // the digest, so what's playing is visible without
+                    // switching to the Media tab. Click anywhere but the
+                    // play/pause button to jump there.
+                    Rectangle {
+                        id: nowPlayingBanner
+                        Layout.fillWidth: true
+                        visible: ccWindow.nowPlayingPlayer !== null
+                        implicitHeight: nowPlayingRow.implicitHeight + 12
+                        radius: Config.radiusCell
+                        color: nowPlayingMA.containsMouse ? Theme.hover : "transparent"
+
+                        MouseArea {
+                            id: nowPlayingMA
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: ccWindow.activeTab = 2
+                        }
+
+                        RowLayout {
+                            id: nowPlayingRow
+                            anchors.fill: parent
+                            anchors.margins: 6
+                            spacing: 8
+
+                            Rectangle {
+                                width: 32; height: 32
+                                radius: Config.radiusCell
+                                color: Theme.elev1
+                                clip: true
+                                Image {
+                                    anchors.fill: parent
+                                    visible: (ccWindow.nowPlayingPlayer?.trackArtUrl ?? "") !== ""
+                                    source: ccWindow.nowPlayingPlayer?.trackArtUrl ?? ""
+                                    fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true
+                                }
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: (ccWindow.nowPlayingPlayer?.trackArtUrl ?? "") === ""
+                                    text: "󰎇"
+                                    font.family: Config.fontFamily; font.pixelSize: 14
+                                    color: Theme.subtle
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 0
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: ccWindow.nowPlayingPlayer?.trackTitle || "Unknown track"
+                                    font { family: Config.fontFamily; pixelSize: 12; bold: true }
+                                    color: Theme.text
+                                    elide: Text.ElideRight
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    visible: (ccWindow.nowPlayingPlayer?.trackArtist ?? "") !== ""
+                                    text: ccWindow.nowPlayingPlayer?.trackArtist ?? ""
+                                    font { family: Config.fontFamily; pixelSize: 10 }
+                                    color: Theme.subtle
+                                    elide: Text.ElideRight
+                                }
+                            }
+
+                            MediaIconButton {
+                                icon: ccWindow.nowPlayingPlayer?.isPlaying ?? false ? "󰏤" : "󰐊"
+                                small: true
+                                enabled: ccWindow.nowPlayingPlayer?.canTogglePlaying ?? false
+                                onClicked: ccWindow.nowPlayingPlayer.togglePlaying()
+                            }
+                        }
+                    }
 
                     // Digest — only abnormal state, else nothing. Icon logic
                     // mirrors BarNotifications.qml exactly, so the glyph never
@@ -384,8 +485,9 @@ Scope {
                         CcTab { icon: "󰂜"; selected: ccWindow.activeTab === 0; onClicked: ccWindow.activeTab = 0
                             badge: root.storedNotifications.length > 0 ? root.storedNotifications.length : 0 }
                         CcTab { icon: "󰕾"; selected: ccWindow.activeTab === 1; onClicked: ccWindow.activeTab = 1 }
-                        CcTab { icon: "󰛳"; selected: ccWindow.activeTab === 2; onClicked: ccWindow.activeTab = 2 }
-                        CcTab { icon: "󰸌"; selected: ccWindow.activeTab === 3; onClicked: ccWindow.activeTab = 3 }
+                        CcTab { icon: "󰝚"; selected: ccWindow.activeTab === 2; onClicked: ccWindow.activeTab = 2 }
+                        CcTab { icon: "󰛳"; selected: ccWindow.activeTab === 3; onClicked: ccWindow.activeTab = 3 }
+                        CcTab { icon: "󰸌"; selected: ccWindow.activeTab === 4; onClicked: ccWindow.activeTab = 4 }
                     }
 
                     // ── Notifications tab ──
@@ -543,10 +645,49 @@ Scope {
                         }
                     }
 
-                    // ── Network tab ──
+                    // ── Media tab ──
                     ColumnLayout {
                         Layout.fillWidth: true
                         visible: ccWindow.activeTab === 2
+                        spacing: 8
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            visible: ccWindow.mprisPlayers.length > 1
+                            spacing: 2
+                            Repeater {
+                                model: ccWindow.mprisPlayers.length
+                                delegate: CcSubTab {
+                                    required property int index
+                                    text: ccWindow.mprisPlayers[index].identity || "Player"
+                                    selected: index === ccWindow.activePlayerIndex
+                                    onClicked: ccWindow.activePlayerIndex = index
+                                }
+                            }
+                        }
+
+                        Text {
+                            visible: ccWindow.mprisPlayers.length === 0
+                            Layout.fillWidth: true
+                            Layout.topMargin: 8
+                            Layout.bottomMargin: 8
+                            horizontalAlignment: Text.AlignHCenter
+                            text: "No media playing"
+                            font.family: Config.fontFamily; font.pixelSize: 12
+                            color: Theme.subtle
+                        }
+
+                        MediaPlayerCard {
+                            Layout.fillWidth: true
+                            visible: ccWindow.activePlayer !== null
+                            player: ccWindow.activePlayer
+                        }
+                    }
+
+                    // ── Network tab ──
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        visible: ccWindow.activeTab === 3
                         spacing: 8
 
                         RowLayout {
@@ -673,7 +814,7 @@ Scope {
                     // ── Themes tab ──
                     ColumnLayout {
                         Layout.fillWidth: true
-                        visible: ccWindow.activeTab === 3
+                        visible: ccWindow.activeTab === 4
                         spacing: 4
 
                         Item {
@@ -1029,6 +1170,222 @@ Scope {
                 color: ccPassMA.containsMouse ? netRow.accentColor : Theme.subtle
                 MouseArea { id: ccPassMA; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true
                     onClicked: netRow.submitPassword(ccPassInput.text) }
+            }
+        }
+    }
+
+    // Small round transport button — icon-only, active state mirrors the
+    // elev2+accent-border / press-on-hover convention used everywhere else.
+    component MediaIconButton: Rectangle {
+        id: btn
+        property string icon: ""
+        property bool active: false
+        property bool small: false
+        property bool big: false
+        property bool enabled: true
+        signal clicked()
+
+        implicitWidth: big ? 40 : (small ? 26 : 32)
+        implicitHeight: implicitWidth
+        radius: implicitWidth / 2
+        opacity: btn.enabled ? 1 : 0.35
+        color: btn.active
+            ? (btnMA.containsMouse ? Theme.press : Theme.elev2)
+            : (btnMA.containsMouse ? Theme.hover : "transparent")
+        border.width: btn.active ? 1 : 0
+        border.color: Theme.accent
+
+        Text {
+            anchors.centerIn: parent
+            text: btn.icon
+            font.family: Config.fontFamily
+            font.pixelSize: btn.big ? 18 : (btn.small ? 12 : 15)
+            color: btn.active ? Theme.accent : (btnMA.containsMouse ? Theme.text : Theme.subtle)
+        }
+
+        MouseArea {
+            id: btnMA
+            anchors.fill: parent
+            hoverEnabled: true
+            enabled: btn.enabled
+            onClicked: btn.clicked()
+        }
+    }
+
+    // MPRIS now-playing card. `player` may be null (no active player) — every
+    // binding that touches it goes through `?.` so the card degrades to an
+    // inert empty state instead of erroring.
+    component MediaPlayerCard: ColumnLayout {
+        id: card
+        property var player: null
+        readonly property bool hasPlayer: card.player !== null
+        readonly property bool isPlaying: card.player?.isPlaying ?? false
+        readonly property real length: (card.player?.lengthSupported ?? false) ? card.player.length : 0
+        property real tickPosition: card.player?.position ?? 0
+        spacing: 8
+
+        function fmt(t) {
+            if (!t || t < 0 || isNaN(t)) return "0:00"
+            var total = Math.floor(t)
+            var m = Math.floor(total / 60)
+            var s = total % 60
+            return m + ":" + (s < 10 ? "0" : "") + s
+        }
+
+        onPlayerChanged: card.tickPosition = card.player?.position ?? 0
+
+        Connections {
+            target: card.player
+            function onPositionChanged() { card.tickPosition = card.player.position }
+            function onTrackChanged() { card.tickPosition = 0 }
+        }
+
+        Timer {
+            interval: 1000
+            repeat: true
+            running: card.isPlaying
+            onTriggered: card.tickPosition = card.length > 0
+                ? Math.min(card.tickPosition + 1, card.length)
+                : card.tickPosition + 1
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            visible: card.hasPlayer
+            spacing: 10
+
+            Rectangle {
+                width: 48; height: 48
+                radius: Config.radiusCell
+                color: Theme.elev1
+                clip: true
+
+                Image {
+                    anchors.fill: parent
+                    visible: (card.player?.trackArtUrl ?? "") !== ""
+                    source: card.player?.trackArtUrl ?? ""
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                }
+                Text {
+                    anchors.centerIn: parent
+                    visible: (card.player?.trackArtUrl ?? "") === ""
+                    text: "󰎇"
+                    font.family: Config.fontFamily; font.pixelSize: 20
+                    color: Theme.subtle
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
+                Text {
+                    Layout.fillWidth: true
+                    text: card.player?.trackTitle || "Unknown track"
+                    font { family: Config.fontFamily; pixelSize: 13; bold: true }
+                    color: Theme.text
+                    elide: Text.ElideRight
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: (card.player?.trackArtist ?? "") !== ""
+                    text: card.player?.trackArtist ?? ""
+                    font { family: Config.fontFamily; pixelSize: 11 }
+                    color: Theme.subtle
+                    elide: Text.ElideRight
+                }
+            }
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            visible: card.hasPlayer
+            spacing: 2
+
+            Rectangle {
+                id: seekTrack
+                Layout.fillWidth: true
+                height: 5; radius: 2.5
+                color: seekMA.containsMouse ? Theme.hover : Theme.divider
+                Rectangle {
+                    width: card.length > 0 ? parent.width * Math.min(card.tickPosition / card.length, 1.0) : 0
+                    height: parent.height; radius: parent.radius
+                    color: Theme.accent
+                    Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.Linear } }
+                }
+                MouseArea {
+                    id: seekMA
+                    anchors.fill: parent
+                    anchors.topMargin: -6; anchors.bottomMargin: -6
+                    hoverEnabled: true
+                    enabled: (card.player?.canSeek ?? false) && card.length > 0
+                    onClicked: mouse => {
+                        var ratio = Math.max(0, Math.min(1, mouse.x / width))
+                        card.player.position = ratio * card.length
+                        card.tickPosition = card.player.position
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Text {
+                    text: card.fmt(card.tickPosition)
+                    font { family: Config.fontFamily; pixelSize: 10; features: { "tnum": 1 } }
+                    color: Theme.subtle
+                }
+                Item { Layout.fillWidth: true }
+                Text {
+                    text: card.fmt(card.length)
+                    font { family: Config.fontFamily; pixelSize: 10; features: { "tnum": 1 } }
+                    color: Theme.subtle
+                }
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: 2
+            visible: card.hasPlayer
+            spacing: 6
+
+            MediaIconButton {
+                icon: "󰒝"
+                small: true
+                active: card.player?.shuffle ?? false
+                enabled: card.player?.shuffleSupported ?? false
+                onClicked: card.player.shuffle = !card.player.shuffle
+            }
+            Item { Layout.fillWidth: true }
+            MediaIconButton {
+                icon: "󰒮"
+                enabled: card.player?.canGoPrevious ?? false
+                onClicked: card.player.previous()
+            }
+            MediaIconButton {
+                icon: card.isPlaying ? "󰏤" : "󰐊"
+                big: true
+                enabled: card.player?.canTogglePlaying ?? false
+                onClicked: card.player.togglePlaying()
+            }
+            MediaIconButton {
+                icon: "󰒭"
+                enabled: card.player?.canGoNext ?? false
+                onClicked: card.player.next()
+            }
+            Item { Layout.fillWidth: true }
+            MediaIconButton {
+                icon: card.player?.loopState === MprisLoopState.Track ? "󰑘"
+                    : card.player?.loopState === MprisLoopState.Playlist ? "󰑖" : "󰑗"
+                small: true
+                active: (card.player?.loopState ?? MprisLoopState.None) !== MprisLoopState.None
+                enabled: card.player?.loopSupported ?? false
+                onClicked: {
+                    var next = card.player.loopState === MprisLoopState.None ? MprisLoopState.Playlist
+                        : card.player.loopState === MprisLoopState.Playlist ? MprisLoopState.Track
+                        : MprisLoopState.None
+                    card.player.loopState = next
+                }
             }
         }
     }
