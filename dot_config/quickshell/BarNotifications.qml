@@ -1,26 +1,39 @@
 import Quickshell
+import Quickshell.Services.Notifications
 import QtQuick
 import QtQuick.Layouts
 
-Rectangle {
+BarCell {
+    id: bellBlock
     Layout.alignment: Qt.AlignHCenter
-    width: 36; height: 36; radius: 6
-    color: bellMA.containsMouse
-        ? (root.notifSuppressed ? Theme.muted : Theme.notificationColor)
-        : "transparent"
-    Behavior on color { ColorAnimation { duration: 100 } }
+    property var screen: null
+    // storedNotifications is sorted by urgency (descending), so the head
+    // being Critical means at least one Critical entry is pending.
+    readonly property bool anyCritical: root.storedNotifications.length > 0
+        && root.storedNotifications[0].urgency === NotificationUrgency.Critical
+    hovered: bellMA.containsMouse
+    pressed: bellMA.pressed
+    // "always": hue at rest, grey to subtle when suppressed (today's look).
+    // "state": rest at subtle, accent when there's something to report
+    // (unread notifications) or when DND/suppression is active.
+    active: Config.barAccentPolicy === "always"
+        ? !root.notifSuppressed
+        : (root.storedNotifications.length > 0 || root.notifSuppressed)
+    urgent: false
+    accentColor: Theme.notificationColor
 
     Text {
         anchors.centerIn: parent
         font.family: Config.fontFamily
         font.pixelSize: 18
-        color: bellMA.containsMouse ? Theme.base
-            : root.notifSuppressed ? Theme.muted : Theme.notificationColor
+        color: bellBlock.glyphColor
         text: root.notifSuppressed ? "󰪑"
             : root.storedNotifications.length > 0 ? "󰂚" : "󰂜"
     }
 
     Rectangle {
+        // Outlined, not filled (A7 burn-in note): this badge is lit for
+        // hours at a time, so only the stroke stays saturated.
         visible: root.storedNotifications.length > 0
         anchors.top: parent.top
         anchors.right: parent.right
@@ -29,15 +42,17 @@ Rectangle {
         width: Math.max(14, badgeText.implicitWidth + 6)
         height: 14
         radius: 7
-        color: Theme.red
+        color: Theme.elev2
+        border.width: 1
+        border.color: bellBlock.anyCritical ? Theme.red : Theme.edge
 
         Text {
             id: badgeText
             anchors.centerIn: parent
             text: root.storedNotifications.length > 99
                 ? "99+" : root.storedNotifications.length.toString()
-            font { family: Config.fontFamily; pixelSize: 9; bold: true }
-            color: Theme.base
+            font { family: Config.fontFamily; pixelSize: 10; bold: true; features: { "tnum": 1 } }
+            color: bellBlock.anyCritical ? Theme.red : Theme.text
         }
     }
 
@@ -50,7 +65,7 @@ Rectangle {
             if (mouse.button === Qt.RightButton) {
                 root.dndEnabled = !root.dndEnabled
             } else {
-                root.toggleNotifPanel()
+                root.toggleNotifPanel(bellBlock.screen)
             }
         }
         onContainsMouseChanged: {

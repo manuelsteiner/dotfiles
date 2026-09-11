@@ -11,11 +11,11 @@ Scope {
             id: wgPanelWindow
             property var modelData
             screen: modelData
-            visible: root.wgPanelVisible
+            visible: root.wgPanelVisible && modelData === root.activePanelScreen
             WlrLayershell.namespace: "qs-wgpanel"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
-            WlrLayershell.margins.left: Config.effectiveBarWidth + Config.barGap - 8
+            WlrLayershell.margins.left: Config.effectiveBarWidth + Config.gap
             anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"
 
@@ -94,19 +94,14 @@ Scope {
                 onClicked: root.wgPanelVisible = false
             }
 
-            Rectangle {
+            PopoutFrame {
                 anchors.left: parent.left
-                anchors.leftMargin: 8
-                y: Math.max(Config.barGap, Math.min(
-                    parent.height - height - Config.barGap,
+                y: Math.max(Config.gap, Math.min(
+                    parent.height - height - Config.gap,
                     root.wgPanelY - 18
                 ))
-                width: 260
+                width: 280
                 height: panelCol.implicitHeight + 24
-                radius: 12
-                color: Theme.surface
-                border.color: Theme.overlay
-                border.width: 2
 
                 MouseArea { anchors.fill: parent }
 
@@ -118,18 +113,19 @@ Scope {
 
                     Text {
                         text: "WireGuard"
-                        font { family: Config.fontFamily; pixelSize: 14; bold: true }
+                        font { family: Config.fontFamily; pixelSize: 13; bold: true }
                         color: Theme.text
                     }
 
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.highlightMed }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.divider }
 
-                    // Empty state
+                    // Empty state — no power/enable control exists for this panel, so a
+                    // minimal hint is kept rather than collapsing to just the header (D-7).
                     Text {
                         visible: wgPanelWindow.tunnels.length === 0
                         text: "No tunnels configured"
                         font { family: Config.fontFamily; pixelSize: 12 }
-                        color: Theme.muted
+                        color: Theme.subtle
                     }
 
                     // Connected tunnels
@@ -172,9 +168,9 @@ Scope {
         signal toggle()
 
         implicitHeight: (tunnel.up && tunnel.ip) ? 44 : 36
-        radius: 8
-        color: tunnel.up ? Theme.overlay
-            : ma.containsMouse ? Theme.highlightMed : "transparent"
+        radius: Config.radiusCell
+        color: tunnel.up ? Theme.elev2
+            : ma.containsMouse ? Theme.hover : "transparent"
         border.color: tunnel.up ? Theme.wireguardColor : "transparent"
         border.width: tunnel.up ? 1 : 0
         Behavior on color { ColorAnimation { duration: 80 } }

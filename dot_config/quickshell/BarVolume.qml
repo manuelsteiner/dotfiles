@@ -4,17 +4,22 @@ import Quickshell.Services.Pipewire
 import QtQuick
 import QtQuick.Layouts
 
-Rectangle {
+BarCell {
     id: volBlock
     Layout.alignment: Qt.AlignHCenter
-    width: 36; height: Config.enableVolumeBar ? 42 : 36; radius: 6
+    height: Config.enableVolumeBar ? 42 : 36
+    property var screen: null
     property var sink: Pipewire.defaultAudioSink
     property real vol: sink?.audio?.volume ?? 0
     property bool muted: sink?.audio?.muted ?? false
-    color: volMA.containsMouse
-        ? (volBlock.muted ? Theme.muted : Theme.volumeColor)
-        : "transparent"
-    Behavior on color { ColorAnimation { duration: 100 } }
+    hovered: volMA.containsMouse
+    pressed: volMA.pressed
+    // "always": hue at rest, grey to subtle when muted (today's look).
+    // "state": rest at subtle always — muted is a routine, often-intentional
+    // state, not something worth a persistent accent border.
+    active: Config.barAccentPolicy === "always" && !volBlock.muted
+    urgent: false
+    accentColor: Theme.volumeColor
 
     PwObjectTracker { objects: [volBlock.sink] }
 
@@ -24,8 +29,7 @@ Rectangle {
         anchors.verticalCenterOffset: Config.enableVolumeBar ? -4 : 0
         font.family: Config.fontFamily
         font.pixelSize: 18
-        color: volMA.containsMouse ? Theme.base
-            : volBlock.muted ? Theme.muted : Theme.volumeColor
+        color: volBlock.glyphColor
         text: volBlock.muted ? "󰸈"
             : volBlock.vol < 0.33 ? "󰕿"
             : volBlock.vol < 0.66 ? "󰖀" : "󰕾"
@@ -38,17 +42,15 @@ Rectangle {
         anchors.bottomMargin: 5
         anchors.horizontalCenter: parent.horizontalCenter
         width: 24; height: 3; radius: 1.5
-        color: volMA.containsMouse ? Theme.highlightMed
-            : volBlock.muted ? Theme.muted : Theme.highlightMed
-        Behavior on color { ColorAnimation { duration: 100 } }
+        color: Theme.divider
+        Behavior on color { ColorAnimation { duration: 80 } }
 
         Rectangle {
             width: parent.width * Math.min(volBlock.vol, 1.0)
             height: parent.height; radius: parent.radius
-            color: volMA.containsMouse ? Theme.base
-                : (volBlock.muted ? Theme.muted : Theme.volumeColor)
-            Behavior on width { NumberAnimation { duration: 80 } }
-            Behavior on color { ColorAnimation { duration: 100 } }
+            color: volBlock.glyphColor
+            Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+            Behavior on color { ColorAnimation { duration: 80 } }
         }
     }
 
@@ -66,7 +68,7 @@ Rectangle {
                 root.showVolumeOsd()
             } else if (Config.enableVolumePanel) {
                 var pos = parent.mapToItem(null, 0, parent.height / 2)
-                root.toggleVolumePanel(pos.y)
+                root.toggleVolumePanel(pos.y, volBlock.screen)
             } else {
                 volAppProc.running = true
             }

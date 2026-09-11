@@ -7,11 +7,23 @@ background {
     monitor =
     color = $base
     path = $background
-    blur_passes = 2
-    contrast = 0.8916
-    brightness = 0.8172
-    vibrancy = 0.1696
-    vibrancy_darkness = 0.0
+}
+
+# SCRIM — flat 50% black overlay instead of blur/brightness/contrast/vibrancy.
+# Blurring a dark wallpaper leaves it dark, and brightness < 1.0 darkens it
+# further; a flat scrim works on any wallpaper. Hyprlock's shape widget takes
+# plain pixel sizes (no percentage support), so this is oversized well past
+# any real monitor resolution and pinned to the top-left corner to guarantee
+# full coverage regardless of the wallpaper/output size.
+shape {
+    monitor =
+    size = 7680, 4320
+    color = $scrim
+    rounding = 0
+    border_size = 0
+    position = 0, 0
+    halign = left
+    valign = top
 }
 
 # GENERAL
@@ -25,11 +37,7 @@ general {
 label {
     monitor =
     text = cmd[update:1000] echo "$(date +"%H:%M")"
-    color = $accent
-    shadow_passes = 1
-    shadow_size = 3
-    shadow_color = 0xb8000000
-    shadow_boost = 1.0
+    color = $text
     font_size = 120
     font_family = Noto Bold
     position = 0, -140
@@ -42,10 +50,6 @@ label {
     monitor =
     text = cmd[update:1000] echo "<span>$(date '+%A, %d %B')</span>"
     color = $text
-    shadow_passes = 1
-    shadow_size = 3
-    shadow_color = 0xb8000000
-    shadow_boost = 1.0
     font_size = 30
     font_family = Noto Bold
     position = 0, -320
@@ -58,10 +62,6 @@ label {
     monitor =
     text = $USER
     color = $text
-    shadow_passes = 1
-    shadow_size = 3
-    shadow_color = 0xb8000000
-    shadow_boost = 1.0
     font_size = 25
     font_family = Noto Bold
     position = 0, -70
@@ -73,13 +73,13 @@ label {
 input-field {
     monitor =
     size = 290, 60
-    outline_thickness = 2
+    outline_thickness = 1
     rounding = 10
     dots_size = 0.2 # Scale of input-field height, 0.2 - 0.8
     dots_spacing = 0.2 # Scale of dots' absolute size, 0.0 - 1.0
     dots_center = true
-    outer_color = $surface
-    inner_color = $base
+    outer_color = $edge
+    inner_color = $elev2
     font_color = $text
     fade_on_empty = false
     font_family = Noto Bold

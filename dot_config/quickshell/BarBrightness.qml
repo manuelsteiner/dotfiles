@@ -3,13 +3,16 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
-Rectangle {
+BarCell {
     id: brightBlock
     Layout.alignment: Qt.AlignHCenter
-    width: 36; height: Config.enableBrightnessBar ? 42 : 36; radius: 6
+    height: Config.enableBrightnessBar ? 42 : 36
     property real bright: root.brightOsdValue
-    color: brightMA.containsMouse ? Theme.brightnessColor : "transparent"
-    Behavior on color { ColorAnimation { duration: 100 } }
+    hovered: brightMA.containsMouse
+    pressed: brightMA.pressed
+    active: Config.barAccentPolicy === "always"
+    urgent: false
+    accentColor: Theme.brightnessColor
 
     Text {
         anchors.horizontalCenter: parent.horizontalCenter
@@ -17,7 +20,7 @@ Rectangle {
         anchors.verticalCenterOffset: Config.enableBrightnessBar ? -4 : 0
         font.family: Config.fontFamily
         font.pixelSize: 18
-        color: brightMA.containsMouse ? Theme.base : Theme.brightnessColor
+        color: brightBlock.glyphColor
         text: brightBlock.bright < 0.33 ? "󰃞"
             : brightBlock.bright < 0.66 ? "󰃟" : "󰃠"
     }
@@ -29,16 +32,15 @@ Rectangle {
         anchors.bottomMargin: 5
         anchors.horizontalCenter: parent.horizontalCenter
         width: 24; height: 3; radius: 1.5
-        color: brightMA.containsMouse ? Theme.highlightMed
-            : Theme.highlightMed
-        Behavior on color { ColorAnimation { duration: 100 } }
+        color: Theme.divider
+        Behavior on color { ColorAnimation { duration: 80 } }
 
         Rectangle {
             width: parent.width * Math.min(brightBlock.bright, 1.0)
             height: parent.height; radius: parent.radius
-            color: brightMA.containsMouse ? Theme.base : Theme.brightnessColor
-            Behavior on width { NumberAnimation { duration: 80 } }
-            Behavior on color { ColorAnimation { duration: 100 } }
+            color: brightBlock.glyphColor
+            Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+            Behavior on color { ColorAnimation { duration: 80 } }
         }
     }
 

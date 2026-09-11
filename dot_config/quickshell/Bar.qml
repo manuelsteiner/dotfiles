@@ -15,42 +15,60 @@ Scope {
             WlrLayershell.exclusionMode: ExclusionMode.Auto
             anchors { top: true; bottom: true; left: true }
             implicitWidth: Config.effectiveBarWidth
-            color: Config.barIslands ? "transparent" : Theme.base
+            color: "transparent"
+
+            // Idle dim (rule 18): the bar dims rather than hides. Popouts and
+            // OSDs always open at full opacity — this only affects the island
+            // column below (PanelWindow itself has no `opacity` property).
+            property bool idle: false
+
+            Timer {
+                id: idleTimer
+                interval: Config.barIdleTimeout
+                running: Config.barIdleDim
+                onTriggered: barWindow.idle = true
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                propagateComposedEvents: true
+                onPositionChanged: mouse => { barWindow.idle = false; idleTimer.restart(); mouse.accepted = false }
+                onPressed: mouse => { barWindow.idle = false; idleTimer.restart(); mouse.accepted = false }
+            }
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.topMargin: Config.barGap
-                anchors.bottomMargin: Config.barGap
-                anchors.leftMargin: Config.barIslands ? Config.barGap : 0
+                anchors.topMargin: Config.gap
+                anchors.bottomMargin: Config.gap
+                anchors.leftMargin: Config.barIslands ? Config.gap : 0
                 anchors.rightMargin: 0
-                spacing: Config.barIslands ? Config.barGap : 4
+                spacing: Config.barIslands ? Config.gap : 4
+
+                opacity: Config.barIdleDim && barWindow.idle ? Config.barIdleOpacity : 1.0
+                Behavior on opacity {
+                    NumberAnimation { duration: barWindow.idle ? 400 : 120 }
+                }
 
                 // ── Clock island ──
-                Rectangle {
+                BarIsland {
                     visible: Config.enableClock
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.fillWidth: true
                     Layout.preferredHeight: clockItem.implicitHeight + (Config.barIslands ? 12 : 0)
-                    radius: Config.barIslands ? 6 : 0
-                    color: Config.barIslands ? Theme.surface : "transparent"
 
                     BarClock {
                         id: clockItem
                         anchors.centerIn: parent
                         width: parent.width
+                        screen: barWindow.screen
                     }
                 }
 
                 BarSeparator { visible: !Config.barIslands && Config.enableClock && Config.enableWorkspaces }
 
                 // ── Workspaces island ──
-                Rectangle {
+                BarIsland {
                     visible: Config.enableWorkspaces
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.fillWidth: true
                     Layout.preferredHeight: wsItem.implicitHeight + (Config.barIslands ? 12 : 0)
-                    radius: Config.barIslands ? 6 : 0
-                    color: Config.barIslands ? Theme.surface : "transparent"
 
                     BarWorkspaces {
                         id: wsItem
@@ -65,46 +83,42 @@ Scope {
                 BarSeparator { visible: !Config.barIslands }
 
                 // ── System tray island ──
-                Rectangle {
+                BarIsland {
                     visible: Config.enableSystemTray && barTray.height > 0
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.fillWidth: true
                     Layout.preferredHeight: barTray.implicitHeight + (Config.barIslands ? 12 : 0)
-                    radius: Config.barIslands ? 6 : 0
-                    color: Config.barIslands ? Theme.surface : "transparent"
 
                     BarSystemTray {
                         id: barTray
                         anchors.centerIn: parent
+                        screen: barWindow.screen
                     }
                 }
 
                 BarSeparator { visible: !Config.barIslands && Config.enableSystemTray && barTray.height > 0 }
 
                 // ── Status island ──
-                Rectangle {
+                BarIsland {
                     id: statusIsland
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.fillWidth: true
                     Layout.preferredHeight: statusCol.implicitHeight + (Config.barIslands ? 12 : 0)
-                    radius: Config.barIslands ? 6 : 0
-                    color: Config.barIslands ? Theme.surface : "transparent"
 
                     ColumnLayout {
                         id: statusCol
                         anchors.centerIn: parent
-                        spacing: Config.barIslands ? 0 : 4
+                        // 2px even in island mode: two adjacent cells with a
+                        // 1px accent/urgent border would otherwise touch and
+                        // merge into what reads as a single double-line.
+                        spacing: Config.barIslands ? 2 : 4
 
-                        BarVolume { visible: Config.enableVolume }
-                        BarMicrophone { visible: Config.enableMicrophone }
+                        BarVolume { visible: Config.enableVolume; screen: barWindow.screen }
+                        BarMicrophone { visible: Config.enableMicrophone; screen: barWindow.screen }
                         BarBrightness { visible: Config.enableBrightness }
                         BarEthernet { id: barEth; visible: Config.enableEthernet && (!Config.hideDisconnectedEthernet || barEth.up) }
-                        BarWireless { id: barWifi; visible: Config.enableWireless && (!Config.hideDisconnectedWireless || barWifi.up) }
-                        BarWireguard { id: barWg; visible: Config.enableWireguard && (!Config.hideDisconnectedWireguard || barWg.anyUp) }
-                        BarBluetooth { id: barBt; visible: Config.enableBluetooth && (!Config.hideDisconnectedBluetooth || barBt.powered) }
+                        BarWireless { id: barWifi; visible: Config.enableWireless && (!Config.hideDisconnectedWireless || barWifi.up); screen: barWindow.screen }
+                        BarWireguard { id: barWg; visible: Config.enableWireguard && (!Config.hideDisconnectedWireguard || barWg.anyUp); screen: barWindow.screen }
+                        BarBluetooth { id: barBt; visible: Config.enableBluetooth && (!Config.hideDisconnectedBluetooth || barBt.powered); screen: barWindow.screen }
                         BarBattery { visible: Config.enableBattery }
-                        BarNotifications { visible: Config.enableNotifications }
-                        BarPower { visible: Config.enablePower }
+                        BarNotifications { visible: Config.enableNotifications; screen: barWindow.screen }
+                        BarPower { visible: Config.enablePower; screen: barWindow.screen }
                     }
                 }
             }

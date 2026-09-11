@@ -3,10 +3,9 @@ import Quickshell.Services.UPower
 import QtQuick
 import QtQuick.Layouts
 
-Rectangle {
+BarCell {
     id: batBlock
     Layout.alignment: Qt.AlignHCenter
-    width: 36; height: 36; radius: 6
 
     property var bat: UPower.displayDevice
     property real level: (bat?.percentage ?? -1) < 0 ? -1 : bat.percentage * 100
@@ -16,22 +15,28 @@ Rectangle {
             || s === UPowerDeviceState.FullyCharged
     }
     property bool hasBattery: level >= 0
-
+    // No dedicated Theme.batteryColor exists today; the tier color (low/mid/
+    // full) already carries the meaningful signal, so it doubles as accent.
     property color tierColor: level < 20 ? Theme.red
                             : level < 50 ? Theme.yellow
                             : Theme.blue
 
-    color: batMA.containsMouse
-        ? (hasBattery ? tierColor : Theme.muted)
-        : "transparent"
-    Behavior on color { ColorAnimation { duration: 100 } }
+    hovered: batMA.containsMouse
+    pressed: batMA.pressed
+    // "always": hue at rest whenever a battery is present, grey to subtle
+    // when there's no battery (desktop). "state": rest at subtle, accent
+    // only when the battery is low and discharging (something to report).
+    active: Config.barAccentPolicy === "always"
+        ? batBlock.hasBattery
+        : (batBlock.hasBattery && batBlock.level < 20 && !batBlock.charging)
+    urgent: false
+    accentColor: batBlock.tierColor
 
     Text {
         anchors.centerIn: parent
         font.family: Config.fontFamily
         font.pixelSize: 18
-        color: batMA.containsMouse ? Theme.base
-            : batBlock.hasBattery ? batBlock.tierColor : Theme.muted
+        color: batBlock.glyphColor
         text: {
             if (!batBlock.hasBattery) return "󱉝"
             if (batBlock.charging) {

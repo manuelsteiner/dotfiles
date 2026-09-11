@@ -11,11 +11,11 @@ Scope {
             id: micPanelWindow
             property var modelData
             screen: modelData
-            visible: root.micPanelVisible
+            visible: root.micPanelVisible && modelData === root.activePanelScreen
             WlrLayershell.namespace: "qs-micpanel"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
-            WlrLayershell.margins.left: Config.effectiveBarWidth + Config.barGap - 8
+            WlrLayershell.margins.left: Config.effectiveBarWidth + Config.gap
             anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"
 
@@ -35,19 +35,14 @@ Scope {
                 onClicked: root.micPanelVisible = false
             }
 
-            Rectangle {
+            PopoutFrame {
                 anchors.left: parent.left
-                anchors.leftMargin: 8
-                y: Math.max(Config.barGap, Math.min(
-                    parent.height - height - Config.barGap,
+                y: Math.max(Config.gap, Math.min(
+                    parent.height - height - Config.gap,
                     root.micPanelY - 18
                 ))
-                width: 260
+                width: 280
                 height: panelCol.implicitHeight + 24
-                radius: 12
-                color: Theme.surface
-                border.color: Theme.overlay
-                border.width: 2
 
                 MouseArea { anchors.fill: parent }
 
@@ -59,11 +54,11 @@ Scope {
 
                     Text {
                         text: "Audio Input"
-                        font { family: Config.fontFamily; pixelSize: 14; bold: true }
+                        font { family: Config.fontFamily; pixelSize: 13; bold: true }
                         color: Theme.text
                     }
 
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.highlightMed }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.divider }
 
                     // Default source (on top)
                     Repeater {
@@ -110,9 +105,9 @@ Scope {
         }
 
         implicitHeight: visible ? col.height + 16 : 0
-        radius: 8
-        color: isDefault ? Theme.overlay
-            : ma.containsMouse ? Theme.highlightMed : "transparent"
+        radius: Config.radiusCell
+        color: isDefault ? Theme.elev2
+            : ma.containsMouse ? Theme.hover : "transparent"
         border.color: isDefault ? Theme.microphoneColor : "transparent"
         border.width: isDefault ? 1 : 0
         Behavior on color { ColorAnimation { duration: 80 } }
@@ -122,7 +117,7 @@ Scope {
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: parent.left; anchors.right: parent.right
             anchors.leftMargin: 8; anchors.rightMargin: 8
-            spacing: 6
+            spacing: 4
 
             Item {
                 width: parent.width; height: 18
@@ -155,8 +150,9 @@ Scope {
                     id: volText
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
+                    visible: ma.containsMouse || ma.adjustingVolume
                     text: Math.round(del.nodeVol * 100) + "%"
-                    font { family: Config.fontFamily; pixelSize: 11 }
+                    font { family: Config.fontFamily; pixelSize: 11; weight: Font.Medium; features: { "tnum": 1 } }
                     color: del.nodeMuted ? Theme.muted : Theme.subtle
                 }
             }
@@ -164,13 +160,13 @@ Scope {
             Rectangle {
                 id: volumeSlider
                 width: parent.width; height: 5; radius: 2.5
-                color: ma.containsMouse ? Theme.highlightHigh : Theme.highlightMed
+                color: ma.containsMouse ? Theme.hover : Theme.divider
                 Rectangle {
                     width: parent.width * Math.min(del.nodeVol, 1.0)
                     height: parent.height; radius: parent.radius
                     color: del.isDefault ? Theme.microphoneColor
                         : del.nodeMuted ? Theme.muted : Theme.subtle
-                    Behavior on width { NumberAnimation { duration: 80 } }
+                    Behavior on width { NumberAnimation { duration: 80; easing.type: Easing.OutCubic } }
                 }
             }
         }

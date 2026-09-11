@@ -11,11 +11,11 @@ Scope {
             id: btPanelWindow
             property var modelData
             screen: modelData
-            visible: root.btPanelVisible
+            visible: root.btPanelVisible && modelData === root.activePanelScreen
             WlrLayershell.namespace: "qs-btpanel"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
-            WlrLayershell.margins.left: Config.effectiveBarWidth + Config.barGap - 8
+            WlrLayershell.margins.left: Config.effectiveBarWidth + Config.gap
             anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"
 
@@ -179,19 +179,14 @@ Scope {
                 onClicked: root.btPanelVisible = false
             }
 
-            Rectangle {
+            PopoutFrame {
                 anchors.left: parent.left
-                anchors.leftMargin: 8
-                y: Math.max(Config.barGap, Math.min(
-                    parent.height - height - Config.barGap,
+                y: Math.max(Config.gap, Math.min(
+                    parent.height - height - Config.gap,
                     root.btPanelY - 18
                 ))
-                width: 260
+                width: 280
                 height: panelCol.implicitHeight + 24
-                radius: 12
-                color: Theme.surface
-                border.color: Theme.overlay
-                border.width: 2
 
                 MouseArea { anchors.fill: parent }
 
@@ -210,7 +205,7 @@ Scope {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Bluetooth"
-                            font { family: Config.fontFamily; pixelSize: 14; bold: true }
+                            font { family: Config.fontFamily; pixelSize: 13; bold: true }
                             color: Theme.text
                         }
 
@@ -219,7 +214,7 @@ Scope {
                             anchors.verticalCenter: parent.verticalCenter
                             width: powerRow.implicitWidth + 12
                             height: 22; radius: 6
-                            color: powerMA.containsMouse ? Theme.highlightMed : Theme.highlightLow
+                            color: powerMA.containsMouse ? Theme.hover : Theme.elev2
                             Behavior on color { ColorAnimation { duration: 80 } }
 
                             Row {
@@ -237,7 +232,7 @@ Scope {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: btPanelWindow.powered ? "On" : "Off"
                                     font { family: Config.fontFamily; pixelSize: 11 }
-                                    color: btPanelWindow.powered ? Theme.bluetoothColor : Theme.muted
+                                    color: btPanelWindow.powered ? Theme.bluetoothColor : Theme.subtle
                                 }
                             }
 
@@ -254,65 +249,76 @@ Scope {
                         }
                     }
 
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.highlightMed }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.divider }
 
-                    // Empty state
-                    Text {
-                        visible: !btPanelWindow.powered
-                        text: "Bluetooth is off"
-                        font { family: Config.fontFamily; pixelSize: 12 }
-                        color: Theme.muted
-                    }
+                    // Device list — scrolls internally when it overflows the panel
+                    Item {
+                        id: btListContainer
+                        visible: btPanelWindow.powered
+                            && (btPanelWindow.pairedDevices.length > 0 || btPanelWindow.nearbyDevices.length > 0)
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Math.min(btListCol.implicitHeight, 320)
 
-                    // Connected devices
-                    Repeater {
-                        model: btPanelWindow.connectedDevices
-                        delegate: BtDeviceDelegate {
-                            required property var modelData
-                            device: modelData
-                            Layout.fillWidth: true
-                            onToggle: {
-                                btConnectProc.action = "disconnect"
-                                btConnectProc.mac = modelData.mac
-                                btConnectProc.running = true
+                        Flickable {
+                            id: btListFlick
+                            anchors.fill: parent
+                            contentWidth: width
+                            contentHeight: btListCol.implicitHeight
+                            clip: true
+                            boundsBehavior: Flickable.StopAtBounds
+
+                            ColumnLayout {
+                                id: btListCol
+                                width: btListFlick.width
+                                spacing: 8
+
+                                // Connected devices
+                                Repeater {
+                                    model: btPanelWindow.connectedDevices
+                                    delegate: BtDeviceDelegate {
+                                        required property var modelData
+                                        device: modelData
+                                        Layout.fillWidth: true
+                                        onToggle: {
+                                            btConnectProc.action = "disconnect"
+                                            btConnectProc.mac = modelData.mac
+                                            btConnectProc.running = true
+                                        }
+                                    }
+                                }
+
+                                // Disconnected (paired) devices
+                                Repeater {
+                                    model: btPanelWindow.disconnectedDevices
+                                    delegate: BtDeviceDelegate {
+                                        required property var modelData
+                                        device: modelData
+                                        Layout.fillWidth: true
+                                        onToggle: {
+                                            btConnectProc.action = "connect"
+                                            btConnectProc.mac = modelData.mac
+                                            btConnectProc.running = true
+                                        }
+                                    }
+                                }
+
+                                // Nearby (discovered, not paired) devices
+                                Repeater {
+                                    model: btPanelWindow.nearbyDevices
+                                    delegate: BtNearbyDelegate {
+                                        required property var modelData
+                                        device: modelData
+                                        Layout.fillWidth: true
+                                        onConnect: {
+                                            btPairConnectProc.mac = modelData.mac
+                                            btPairConnectProc.running = true
+                                        }
+                                    }
+                                }
                             }
                         }
-                    }
 
-                    // Disconnected (paired) devices
-                    Repeater {
-                        model: btPanelWindow.disconnectedDevices
-                        delegate: BtDeviceDelegate {
-                            required property var modelData
-                            device: modelData
-                            Layout.fillWidth: true
-                            onToggle: {
-                                btConnectProc.action = "connect"
-                                btConnectProc.mac = modelData.mac
-                                btConnectProc.running = true
-                            }
-                        }
-                    }
-
-                    // Nearby (discovered, not paired) devices
-                    Repeater {
-                        model: btPanelWindow.nearbyDevices
-                        delegate: BtNearbyDelegate {
-                            required property var modelData
-                            device: modelData
-                            Layout.fillWidth: true
-                            onConnect: {
-                                btPairConnectProc.mac = modelData.mac
-                                btPairConnectProc.running = true
-                            }
-                        }
-                    }
-
-                    Text {
-                        visible: btPanelWindow.powered && btPanelWindow.pairedDevices.length === 0 && btPanelWindow.nearbyDevices.length === 0
-                        text: "No devices found"
-                        font { family: Config.fontFamily; pixelSize: 12 }
-                        color: Theme.muted
+                        OverlayScrollBar { flickable: btListFlick }
                     }
                 }
             }
@@ -325,9 +331,9 @@ Scope {
         signal toggle()
 
         implicitHeight: 36
-        radius: 8
-        color: device.connected ? Theme.overlay
-            : ma.containsMouse ? Theme.highlightMed : "transparent"
+        radius: Config.radiusCell
+        color: device.connected ? Theme.elev2
+            : ma.containsMouse ? Theme.hover : "transparent"
         border.color: device.connected ? Theme.bluetoothColor : "transparent"
         border.width: device.connected ? 1 : 0
         Behavior on color { ColorAnimation { duration: 80 } }
@@ -376,7 +382,7 @@ Scope {
                 anchors.right: dot.left; anchors.rightMargin: 8
                 anchors.verticalCenter: parent.verticalCenter
                 text: del.device.battery + "%"
-                font { family: Config.fontFamily; pixelSize: 11 }
+                font { family: Config.fontFamily; pixelSize: 11; weight: Font.Medium; features: { "tnum": 1 } }
                 color: del.device.battery <= 20 ? Theme.red
                     : del.device.battery <= 40 ? Theme.yellow
                     : Theme.subtle
@@ -406,8 +412,8 @@ Scope {
         signal connect()
 
         implicitHeight: 36
-        radius: 8
-        color: nma.containsMouse ? Theme.highlightMed : "transparent"
+        radius: Config.radiusCell
+        color: nma.containsMouse ? Theme.hover : "transparent"
         Behavior on color { ColorAnimation { duration: 80 } }
 
         Item {

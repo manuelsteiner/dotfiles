@@ -2,28 +2,27 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 
-Rectangle {
+BarCell {
+    id: powerBlock
     Layout.alignment: Qt.AlignHCenter
-    width: 36; height: 36; radius: 6
-    color: powerMA.containsMouse ? Theme.powerColor : "transparent"
-    Behavior on color { ColorAnimation { duration: 120 } }
+    property var screen: null
+    hovered: powerMA.containsMouse
+    pressed: powerMA.pressed
+    active: Config.barAccentPolicy === "always"
+    urgent: false
+    accentColor: Theme.powerColor
 
     Text {
         anchors.centerIn: parent
         text: "󰐥"
         font.pixelSize: 18
-        color: powerMA.containsMouse ? Theme.base : Theme.powerColor
-        Behavior on color { ColorAnimation { duration: 120 } }
+        color: powerBlock.glyphColor
     }
 
     MouseArea {
         id: powerMA
         anchors.fill: parent
         hoverEnabled: true
-        onClicked: {
-            var show = !root.powerMenuVisible
-            root.closeAllPanels(show ? "power" : undefined)
-            root.powerMenuVisible = show
-        }
+        onClicked: root.togglePowerMenu(powerBlock.screen)
     }
 }

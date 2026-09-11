@@ -2,14 +2,20 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 
-Rectangle {
+BarCell {
     id: clockBlock
     Layout.alignment: Qt.AlignHCenter
-    implicitWidth: 40
+    property var screen: null
+    width: 40
+    height: clockCol.implicitHeight + 10
+    // Bar.qml sizes the clock's island off `clockItem.implicitHeight` — a
+    // plain `height:` binding doesn't feed implicitHeight, so it must be set
+    // explicitly too or the island collapses to a near-zero-height sliver.
     implicitHeight: clockCol.implicitHeight + 10
-    radius: 6
-    color: clockMA.containsMouse ? Theme.highlightLow : "transparent"
-    Behavior on color { ColorAnimation { duration: 100 } }
+    hovered: clockMA.containsMouse
+    pressed: clockMA.pressed
+    active: false
+    urgent: false
 
     property string hhStr: ""
     property string mmStr: ""
@@ -43,13 +49,13 @@ Rectangle {
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: clockBlock.hhStr
-            font { family: Config.fontFamily; pixelSize: 18; bold: true }
+            font { family: Config.fontFamily; pixelSize: 18; bold: true; features: { "tnum": 1 } }
             color: Theme.text
         }
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: clockBlock.mmStr
-            font { family: Config.fontFamily; pixelSize: 18; bold: true }
+            font { family: Config.fontFamily; pixelSize: 18; bold: true; features: { "tnum": 1 } }
             color: Theme.accent
         }
     }
@@ -59,7 +65,7 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         onClicked: {
-            if (Config.enableCalendar) root.toggleCalendar()
+            if (Config.enableCalendar) root.toggleCalendar(clockBlock.screen)
         }
         onContainsMouseChanged: {
             if (containsMouse) {

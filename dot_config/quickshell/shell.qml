@@ -137,14 +137,20 @@ ShellRoot {
         if (except !== "wifiPanel")     root.wifiPanelVisible = false
     }
 
+    // Screen a popout was opened from — popouts only render on this one
+    // instead of every connected monitor. Shared across all of them since
+    // closeAllPanels already keeps them mutually exclusive.
+    property var activePanelScreen: null
+
     // ── Volume panel state ──
     property bool volumePanelVisible: false
     property real volumePanelY: 0
 
-    function toggleVolumePanel(globalY) {
+    function toggleVolumePanel(globalY, screen) {
         var show = !root.volumePanelVisible
         root.closeAllPanels(show ? "volumePanel" : undefined)
         root.volumePanelY = globalY
+        if (show) root.activePanelScreen = screen
         root.volumePanelVisible = show
     }
 
@@ -152,10 +158,11 @@ ShellRoot {
     property bool micPanelVisible: false
     property real micPanelY: 0
 
-    function toggleMicPanel(globalY) {
+    function toggleMicPanel(globalY, screen) {
         var show = !root.micPanelVisible
         root.closeAllPanels(show ? "micPanel" : undefined)
         root.micPanelY = globalY
+        if (show) root.activePanelScreen = screen
         root.micPanelVisible = show
     }
 
@@ -163,10 +170,11 @@ ShellRoot {
     property bool btPanelVisible: false
     property real btPanelY: 0
 
-    function toggleBtPanel(globalY) {
+    function toggleBtPanel(globalY, screen) {
         var show = !root.btPanelVisible
         root.closeAllPanels(show ? "btPanel" : undefined)
         root.btPanelY = globalY
+        if (show) root.activePanelScreen = screen
         root.btPanelVisible = show
     }
 
@@ -174,10 +182,11 @@ ShellRoot {
     property bool wgPanelVisible: false
     property real wgPanelY: 0
 
-    function toggleWgPanel(globalY) {
+    function toggleWgPanel(globalY, screen) {
         var show = !root.wgPanelVisible
         root.closeAllPanels(show ? "wgPanel" : undefined)
         root.wgPanelY = globalY
+        if (show) root.activePanelScreen = screen
         root.wgPanelVisible = show
     }
 
@@ -185,19 +194,21 @@ ShellRoot {
     property bool wifiPanelVisible: false
     property real wifiPanelY: 0
 
-    function toggleWifiPanel(globalY) {
+    function toggleWifiPanel(globalY, screen) {
         var show = !root.wifiPanelVisible
         root.closeAllPanels(show ? "wifiPanel" : undefined)
         root.wifiPanelY = globalY
+        if (show) root.activePanelScreen = screen
         root.wifiPanelVisible = show
     }
 
     // ── Calendar state ──
     property bool calendarVisible: false
 
-    function toggleCalendar() {
+    function toggleCalendar(screen) {
         var show = !root.calendarVisible
         root.closeAllPanels(show ? "calendar" : undefined)
+        if (show) root.activePanelScreen = screen
         root.calendarVisible = show
     }
 
@@ -205,17 +216,25 @@ ShellRoot {
     property bool powerMenuVisible: false
     Process { id: powerCmdProc; running: false }
 
+    function togglePowerMenu(screen) {
+        var show = !root.powerMenuVisible
+        root.closeAllPanels(show ? "power" : undefined)
+        if (show) root.activePanelScreen = screen
+        root.powerMenuVisible = show
+    }
+
     // ── Tray context menu state ──
     property var trayMenuHandle: null
     property bool trayMenuVisible: false
     property real trayMenuY: 0
 
-    function openTrayMenu(menuHandle, globalY) {
+    function openTrayMenu(menuHandle, globalY, screen) {
         if (root.trayMenuVisible && root.trayMenuHandle === menuHandle) {
             root.closeTrayMenu()
             return
         }
         root.closeAllPanels("trayMenu")
+        root.activePanelScreen = screen
         root.trayMenuHandle = menuHandle
         root.trayMenuY = globalY
         root.trayMenuVisible = true
@@ -330,10 +349,15 @@ ShellRoot {
             if (!Config.enableNotifications) return
             notification.tracked = true
 
-            // Clean up when notification is closed externally (by app, system, etc.)
+            // The underlying notification object closes itself once the
+            // sender's own expire_timeout elapses (many apps, e.g.
+            // notify-send, default to ~5s) — that's unrelated to whether the
+            // user has seen or dismissed it from the centre. Only drop it
+            // from the live toast layer here; `tracked = true` above keeps
+            // the object alive so it can keep showing in storedNotifications
+            // until the user explicitly dismisses it or clears all.
             notification.closed.connect(function() {
                 root.toastNotifications = root.toastNotifications.filter(n => n !== notification)
-                root.storedNotifications = root.storedNotifications.filter(n => n !== notification)
             })
 
             // Always store the notification (sorted by urgency)
@@ -351,8 +375,13 @@ ShellRoot {
             }
             root.storedNotifications = stored
 
-            // Show toast unless suppressed (manual DND or fullscreen)
-            if (!root.notifSuppressed && stored.indexOf(notification) !== -1) {
+            // F-1: low-urgency notifications never toast — they land in the
+            // centre (stored above) only. Critical notifications bypass DND
+            // (manual or auto-fullscreen); normal notifications are still
+            // withheld while suppressed.
+            var isCritical = (notification.urgency ?? 1) === NotificationUrgency.Critical
+            var isLow = (notification.urgency ?? 1) === NotificationUrgency.Low
+            if (!isLow && (!root.notifSuppressed || isCritical) && stored.indexOf(notification) !== -1) {
                 var toasts = root.toastNotifications.filter(n => n !== notification)
                 toasts.unshift(notification)
                 root.toastNotifications = toasts.slice(0, Math.max(0, Config.maxLiveNotificationToasts))
@@ -397,9 +426,10 @@ ShellRoot {
         }
     }
 
-    function toggleNotifPanel() {
+    function toggleNotifPanel(screen) {
         var show = !root.notifPanelVisible
         root.closeAllPanels(show ? "notifPanel" : undefined)
+        if (show) root.activePanelScreen = screen
         root.notifPanelVisible = show
     }
 

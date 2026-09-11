@@ -36,8 +36,12 @@ Singleton {
     property string wirelessInterface: "wlan0"
     property var wireguardInterfaces: ["wg-mts"]
 
-    property string workspaceStyle: "background"
+    property string workspaceStyle: "outline" // "outline", "background" or "icon"
     property bool enableWorkspaceTransition: true
+    // Right-click a workspace to move it to the other monitor. When true,
+    // also switch focus to it there; when false, it moves but stays
+    // unfocused wherever you currently are.
+    property bool workspaceMoveFollowsFocus: true
     property var workspaces: [
         { ws: 1, icon: "" },
         { ws: 2, icon: "󰈹" },
@@ -63,11 +67,30 @@ Singleton {
     property string urgentAccent: "red"
 
     property bool barIslands: true
-    property int barGap: 6
+    property int gap: 6
     property int barWidth: 48
-    readonly property int effectiveBarWidth: barIslands ? barWidth + barGap : barWidth
+    readonly property int effectiveBarWidth: barIslands ? barWidth + gap : barWidth
+    property int edgeInset: 10
+    property int radiusCell: 6
+    property int radiusIsland: 10
+    property int radiusPopout: 14
+    property bool popoutHalo: true
     property string osdPosition: "top"
     property string fontFamily: "NotoSans Nerd Font"
+
+    // "state": icons rest at `subtle`, only take on their accent hue when they
+    // have something to report. "always": today's behaviour — per-component
+    // hue at rest, greying out on muted/disconnected.
+    property string barAccentPolicy: "state"
+
+    property bool barIdleDim: false
+    property int barIdleTimeout: 120000 // ms
+    property real barIdleOpacity: 0.55
+
+    // Third-party tray/notification-app icons are full-colour bitmaps outside
+    // the theme system. "native": untouched. "desaturate": grey at rest, full
+    // colour on hover. "dim": opacity 0.75 at rest, 1.0 on hover.
+    property string trayIconStyle: "native"
 
     property int osdDuration: 1500
     property int osdStartupDelay: 2000
@@ -82,6 +105,14 @@ Singleton {
     property int maxStoredNotifications: 20
     // Set above 1 to stack multiple live toasts. Set to 0 to disable them.
     property int maxLiveNotificationToasts: 1
+    // 2px hairline on normal-urgency toasts showing time until auto-expire.
+    property bool toastProgressHairline: true
+    // Collapse consecutive same-app notifications in the centre into one
+    // expandable card. Grouping is by app identity (whatever the sender set
+    // as its name over DBus), not message content — tools that default to a
+    // generic name when called without an explicit app name (e.g. plain
+    // `notify-send` without -a) will group together even with different text.
+    property bool groupNotifications: true
 
     property string volumeApp: "pwvucontrol"
     property string wirelessApp: "iwgtk"

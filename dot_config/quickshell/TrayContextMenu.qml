@@ -13,15 +13,24 @@ Scope {
             property var submenuHandle: null
             property real submenuY: 0
             property real menuOpacity: 0
-            readonly property int menuWidth: 184
+            readonly property int menuWidth: 200
             readonly property real menuTop: Math.max(0, root.trayMenuY - 18)
             readonly property real availableHeight: Math.max(64, screen.height - menuTop - 8)
+            property int mainFocusedIndex: -1
+            property int subFocusedIndex: -1
             screen: modelData
-            visible: root.trayMenuVisible && root.trayMenuHandle !== null
+            visible: root.trayMenuVisible && root.trayMenuHandle !== null && modelData === root.activePanelScreen
             WlrLayershell.namespace: "qs-traymenu"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
-            WlrLayershell.margins.left: Config.effectiveBarWidth + Config.barGap
+            // HyprlandFocusGrab (below) handles click-outside-to-dismiss, but
+            // does NOT by itself route keyboard input to this surface —
+            // without keyboardFocus at all, Keys.on* handlers never fire.
+            // Claiming it immediately on map fought with the click that
+            // opens the menu (see dismissGrabTimer's own comment below), so
+            // it's gated on the same 150ms delay as the dismiss grab instead.
+            WlrLayershell.keyboardFocus: dismissGrab.active ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+            WlrLayershell.margins.left: Config.effectiveBarWidth + Config.gap
             WlrLayershell.margins.top: menuTop
             anchors { top: true; left: true }
             implicitWidth: menuWidth * 2 + 4
@@ -32,6 +41,8 @@ Scope {
             onVisibleChanged: {
                 if (visible) {
                     menuOpacity = 0
+                    mainFocusedIndex = 0
+                    subFocusedIndex = -1
                     dismissGrabTimer.restart()
                     menuFadeTimer.restart()
                 }
@@ -45,10 +56,43 @@ Scope {
             function openSubmenu(handle, y) {
                 submenuHandle = handle
                 submenuY = y
+                subFocusedIndex = 0
             }
 
             function closeSubmenu() {
                 submenuHandle = null
+                subFocusedIndex = -1
+            }
+
+            // D-9 keyboard traversal: operates on the submenu list when one is
+            // open, otherwise the main list.
+            function activeEntries() {
+                return submenuHandle !== null ? submenuOpener.children : rootMenuOpener.children
+            }
+
+            function moveFocus(delta) {
+                var entries = menuWindow.activeEntries()
+                if (!entries || entries.length === 0) return
+                var isSub = submenuHandle !== null
+                var idx = isSub ? subFocusedIndex : mainFocusedIndex
+                idx = Math.max(0, Math.min(entries.length - 1, (idx < 0 ? 0 : idx) + delta))
+                if (isSub) subFocusedIndex = idx
+                else mainFocusedIndex = idx
+            }
+
+            function activateFocused() {
+                var entries = menuWindow.activeEntries()
+                var isSub = submenuHandle !== null
+                var idx = isSub ? subFocusedIndex : mainFocusedIndex
+                if (!entries || idx < 0 || idx >= entries.length) return
+                var entry = entries[idx]
+                if (entry.isSeparator || !entry.enabled) return
+                if (entry.hasChildren) {
+                    menuWindow.openSubmenu(entry, 0)
+                } else {
+                    entry.triggered()
+                    root.closeTrayMenu()
+                }
             }
 
             HyprlandFocusGrab {
@@ -73,6 +117,17 @@ Scope {
                 }
             }
 
+            Item {
+                anchors.fill: parent
+                focus: true
+                Keys.onEscapePressed: root.closeTrayMenu()
+                Keys.onUpPressed: menuWindow.moveFocus(-1)
+                Keys.onDownPressed: menuWindow.moveFocus(1)
+                Keys.onLeftPressed: if (menuWindow.submenuHandle !== null) menuWindow.closeSubmenu()
+                Keys.onReturnPressed: menuWindow.activateFocused()
+                Keys.onEnterPressed: menuWindow.activateFocused()
+            }
+
             QsMenuOpener {
                 id: rootMenuOpener
                 menu: root.trayMenuHandle
@@ -83,7 +138,7 @@ Scope {
                 menu: menuWindow.submenuHandle
             }
 
-            Rectangle {
+            PopoutFrame {
                 id: menuFrame
                 z: 1
                 opacity: menuWindow.menuOpacity
@@ -91,14 +146,10 @@ Scope {
                 y: 0
                 width: menuWindow.menuWidth
                 height: Math.min(mainMenu.implicitHeight + 16, menuWindow.availableHeight)
-                radius: 8
-                color: Theme.surface
-                border.color: Theme.overlay
-                border.width: 2
                 Behavior on opacity {
                     NumberAnimation {
-                        duration: 250
-                        easing.type: Easing.OutQuint
+                        duration: 160
+                        easing.type: Easing.OutCubic
                     }
                 }
 
@@ -127,54 +178,19 @@ Scope {
                                 Layout.minimumWidth: 160
                                 entry: modelData
                                 leadingItem: index === 0
+                                isFocused: menuWindow.submenuHandle === null && index === menuWindow.mainFocusedIndex
                                 onSubmenuRequested: menuWindow.openSubmenu(entry, mainRow.mapToItem(menuFrame, 0, 0).y)
                                 onSubmenuCleared: menuWindow.closeSubmenu()
+                                onHovered: menuWindow.mainFocusedIndex = index
                             }
                         }
                     }
                 }
 
-                Item {
-                    id: mainScrollThumb
-                    visible: mainMenuView.contentHeight > mainMenuView.height
-                    width: 12
-                    height: Math.max(20, mainMenuView.height * mainMenuView.height / mainMenuView.contentHeight)
-                    anchors.right: parent.right
-                    anchors.rightMargin: 0
-                    y: 8 + (mainMenuView.height - height)
-                        * mainMenuView.contentY / Math.max(1, mainMenuView.contentHeight - mainMenuView.height)
-
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: 3
-                        height: parent.height
-                        radius: width / 2
-                        color: Theme.muted
-                    }
-
-                    MouseArea {
-                        property real pressY: 0
-                        property real contentAtPress: 0
-                        anchors.fill: parent
-                        cursorShape: Qt.SizeVerCursor
-                        preventStealing: true
-                        onPressed: mouse => {
-                            pressY = mouse.y
-                            contentAtPress = mainMenuView.contentY
-                            mouse.accepted = true
-                        }
-                        onPositionChanged: mouse => {
-                            if (!pressed) return
-                            var scrollRange = mainMenuView.contentHeight - mainMenuView.height
-                            var trackRange = mainMenuView.height - mainScrollThumb.height
-                            mainMenuView.contentY = Math.max(0, Math.min(scrollRange,
-                                contentAtPress + (mouse.y - pressY) * scrollRange / Math.max(1, trackRange)))
-                        }
-                    }
-                }
+                OverlayScrollBar { flickable: mainMenuView }
             }
 
-            Rectangle {
+            PopoutFrame {
                 id: submenuFrame
                 z: 1
                 visible: true
@@ -185,14 +201,10 @@ Scope {
                     Math.max(0, menuWindow.availableHeight - height))
                 width: menuWindow.menuWidth
                 height: Math.min(subMenu.implicitHeight + 16, menuWindow.availableHeight)
-                radius: 8
-                color: Theme.surface
-                border.color: Theme.overlay
-                border.width: 2
                 Behavior on opacity {
                     NumberAnimation {
-                        duration: 250
-                        easing.type: Easing.OutQuint
+                        duration: 160
+                        easing.type: Easing.OutCubic
                     }
                 }
 
@@ -222,50 +234,15 @@ Scope {
                                 entry: modelData
                                 interactionEnabled: menuWindow.submenuHandle !== null
                                 leadingItem: index === 0
+                                isFocused: menuWindow.submenuHandle !== null && index === menuWindow.subFocusedIndex
                                 onSubmenuRequested: menuWindow.openSubmenu(entry, subRow.mapToItem(menuFrame, 0, 0).y)
+                                onHovered: menuWindow.subFocusedIndex = index
                             }
                         }
                     }
                 }
 
-                Item {
-                    id: subScrollThumb
-                    visible: subMenuView.contentHeight > subMenuView.height
-                    width: 12
-                    height: Math.max(20, subMenuView.height * subMenuView.height / subMenuView.contentHeight)
-                    anchors.right: parent.right
-                    anchors.rightMargin: 0
-                    y: 8 + (subMenuView.height - height)
-                        * subMenuView.contentY / Math.max(1, subMenuView.contentHeight - subMenuView.height)
-
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: 3
-                        height: parent.height
-                        radius: width / 2
-                        color: Theme.muted
-                    }
-
-                    MouseArea {
-                        property real pressY: 0
-                        property real contentAtPress: 0
-                        anchors.fill: parent
-                        cursorShape: Qt.SizeVerCursor
-                        preventStealing: true
-                        onPressed: mouse => {
-                            pressY = mouse.y
-                            contentAtPress = subMenuView.contentY
-                            mouse.accepted = true
-                        }
-                        onPositionChanged: mouse => {
-                            if (!pressed) return
-                            var scrollRange = subMenuView.contentHeight - subMenuView.height
-                            var trackRange = subMenuView.height - subScrollThumb.height
-                            subMenuView.contentY = Math.max(0, Math.min(scrollRange,
-                                contentAtPress + (mouse.y - pressY) * scrollRange / Math.max(1, trackRange)))
-                        }
-                    }
-                }
+                OverlayScrollBar { flickable: subMenuView }
             }
         }
     }
@@ -274,24 +251,32 @@ Scope {
         required property var entry
         property bool interactionEnabled: true
         property bool leadingItem: false
+        property bool isFocused: false
         signal submenuRequested()
         signal submenuCleared()
+        signal hovered()
         Layout.fillWidth: true
         // Disabled entries may be informational headers (for example, Handy's
         // version label), so retain them while preventing interaction below.
         visible: !(leadingItem && entry.isSeparator)
         height: entry.isSeparator ? 9 : 28
-        radius: 4
-        color: !entry.isSeparator && rowMouse.containsMouse
-            ? Theme.highlightMed : "transparent"
-        Behavior on color { ColorAnimation { duration: 60 } }
+        radius: Config.radiusCell
+        // isFocused already tracks mouse hover too (see the hovered() signal
+        // below), so it alone drives the row fill — no separate border for
+        // "focused" vs fill for "hovered"; that split doesn't hold up once
+        // both gestures move the same state, and no other row list in the
+        // shell uses a border for this (device panels, notification rows
+        // all just fill on hover).
+        color: !entry.isSeparator && isFocused
+            ? Theme.hover : "transparent"
+        Behavior on color { ColorAnimation { duration: 80 } }
 
         Rectangle {
             visible: entry.isSeparator
             anchors.centerIn: parent
             width: parent.width - 8
             height: 1
-            color: Theme.highlightMed
+            color: Theme.divider
         }
 
         RowLayout {
@@ -316,9 +301,9 @@ Scope {
                 text: entry.text ?? ""
                 font { family: Config.fontFamily; pixelSize: 12 }
                 color: entry.enabled
-                    ? (rowMouse.containsMouse ? Theme.text : Theme.subtle)
+                    ? (isFocused ? Theme.text : Theme.subtle)
                     : Theme.muted
-                Behavior on color { ColorAnimation { duration: 60 } }
+                Behavior on color { ColorAnimation { duration: 80 } }
                 Layout.fillWidth: true
                 elide: Text.ElideRight
             }
@@ -326,8 +311,8 @@ Scope {
             Text {
                 visible: entry.hasChildren
                 text: "›"
-                font.pixelSize: 14
-                color: Theme.muted
+                font.pixelSize: 12
+                color: Theme.subtle
             }
         }
 
@@ -347,6 +332,7 @@ Scope {
             preventStealing: true
             enabled: interactionEnabled && !entry.isSeparator && entry.enabled
             onEntered: {
+                hovered()
                 if (entry.hasChildren) submenuTimer.restart()
                 else submenuCleared()
             }

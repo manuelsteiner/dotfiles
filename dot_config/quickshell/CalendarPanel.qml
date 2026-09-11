@@ -10,19 +10,33 @@ Scope {
             id: calWindow
             property var modelData
             screen: modelData
-            visible: root.calendarVisible
+            visible: root.calendarVisible && modelData === root.activePanelScreen
             WlrLayershell.namespace: "qs-calendar"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
-            WlrLayershell.margins.left: Config.effectiveBarWidth + Config.barGap - 8
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+            WlrLayershell.margins.left: Config.effectiveBarWidth + Config.gap
             anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"
+
+            // D-9 keyboard traversal over the 42-cell day grid.
+            property int focusedIndex: -1
+
+            function clampIndex(i) { return Math.max(0, Math.min(41, i)) }
+
+            function activateFocused() {
+                if (calWindow.focusedIndex < 0) return
+                var dayNum = calWindow.focusedIndex - calGrid.firstDay + 1
+                if (dayNum < 1) calWindow.prevMonth()
+                else if (dayNum > calGrid.daysInMonth) calWindow.nextMonth()
+            }
 
             onVisibleChanged: {
                 if (visible) {
                     calWindow._now = new Date()
                     calWindow.viewYear = calWindow._now.getFullYear()
                     calWindow.viewMonth = calWindow._now.getMonth()
+                    calWindow.focusedIndex = calGrid.firstDay + calWindow._now.getDate() - 1
                 }
             }
 
@@ -46,26 +60,30 @@ Scope {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                 onClicked: root.calendarVisible = false
+                focus: true
+                Keys.onEscapePressed: root.calendarVisible = false
+                Keys.onUpPressed: calWindow.focusedIndex = calWindow.clampIndex(calWindow.focusedIndex - 7)
+                Keys.onDownPressed: calWindow.focusedIndex = calWindow.clampIndex(calWindow.focusedIndex + 7)
+                Keys.onLeftPressed: calWindow.focusedIndex = calWindow.clampIndex(calWindow.focusedIndex - 1)
+                Keys.onRightPressed: calWindow.focusedIndex = calWindow.clampIndex(calWindow.focusedIndex + 1)
+                Keys.onReturnPressed: calWindow.activateFocused()
+                Keys.onEnterPressed: calWindow.activateFocused()
             }
 
-            Rectangle {
+            PopoutFrame {
                 anchors.top: parent.top
                 anchors.left: parent.left
-                anchors.leftMargin: 8
-                anchors.topMargin: Config.barGap
+                anchors.leftMargin: 0
+                anchors.topMargin: Config.gap
                 width: 240
-                height: calContent.implicitHeight + 32
-                radius: 12
-                color: Theme.surface
-                border.color: Theme.overlay
-                border.width: 2
+                height: calContent.implicitHeight + 24
 
                 MouseArea { anchors.fill: parent }
 
                 ColumnLayout {
                     id: calContent
                     anchors.fill: parent
-                    anchors.margins: 16
+                    anchors.margins: 12
                     spacing: 8
 
                     // Header: nav buttons aligned with grid edges
@@ -77,12 +95,12 @@ Scope {
                             id: prevBtn
                             anchors.left: parent.left
                             width: 28; height: 28; radius: 6
-                            color: prevMA.containsMouse ? Theme.highlightMed : "transparent"
+                            color: prevMA.containsMouse ? Theme.hover : "transparent"
                             Text {
                                 anchors.centerIn: parent
                                 text: "󰅁"
-                                font { family: Config.fontFamily; pixelSize: 14 }
-                                color: prevMA.containsMouse ? Theme.text : Theme.muted
+                                font { family: Config.fontFamily; pixelSize: 13 }
+                                color: prevMA.containsMouse ? Theme.text : Theme.subtle
                             }
                             MouseArea {
                                 id: prevMA
@@ -98,7 +116,7 @@ Scope {
                             anchors.leftMargin: 2
                             anchors.rightMargin: 2
                             height: 28; radius: 6
-                            color: !calWindow.isCurrentMonth && headerMA.containsMouse ? Theme.highlightMed : "transparent"
+                            color: !calWindow.isCurrentMonth && headerMA.containsMouse ? Theme.hover : "transparent"
                             Text {
                                 anchors.centerIn: parent
                                 text: new Date(calWindow.viewYear, calWindow.viewMonth, 1).toLocaleDateString(Qt.locale(), "MMMM yyyy")
@@ -121,12 +139,12 @@ Scope {
                             id: nextBtn
                             anchors.right: parent.right
                             width: 28; height: 28; radius: 6
-                            color: nextMA.containsMouse ? Theme.highlightMed : "transparent"
+                            color: nextMA.containsMouse ? Theme.hover : "transparent"
                             Text {
                                 anchors.centerIn: parent
                                 text: "󰅂"
-                                font { family: Config.fontFamily; pixelSize: 14 }
-                                color: nextMA.containsMouse ? Theme.text : Theme.muted
+                                font { family: Config.fontFamily; pixelSize: 13 }
+                                color: nextMA.containsMouse ? Theme.text : Theme.subtle
                             }
                             MouseArea {
                                 id: nextMA
@@ -160,7 +178,7 @@ Scope {
                                 verticalAlignment: Text.AlignVCenter
                                 text: modelData
                                 font { family: Config.fontFamily; pixelSize: 11; bold: true }
-                                color: Theme.muted
+                                color: Theme.subtle
                             }
                         }
 
@@ -173,13 +191,16 @@ Scope {
                                 property bool isToday: isValid && dayNum === calGrid.todayDay
                                 property bool isPrev: dayNum < 1
                                 property bool isNext: dayNum > calGrid.daysInMonth
+                                property bool isFocused: index === calWindow.focusedIndex
 
                                 Layout.preferredWidth: 28
                                 Layout.preferredHeight: 28
-                                radius: 6
-                                color: isToday ? (dayMA.containsMouse ? Theme.accentDim : Theme.accent)
-                                    : dayMA.containsMouse ? Theme.highlightMed
-                                    : "transparent"
+                                radius: Config.radiusCell
+                                // Today is an accent edge + accent numeral, not a
+                                // filled block (rule 8: no colour inversion).
+                                color: !isToday && dayMA.containsMouse ? Theme.hover : "transparent"
+                                border.width: isToday || isFocused ? 1 : 0
+                                border.color: Theme.accent
                                 Behavior on color { ColorAnimation { duration: 80 } }
 
                                 Text {
@@ -191,10 +212,10 @@ Scope {
                                             return parent.dayNum - calGrid.daysInMonth
                                         return parent.dayNum
                                     }
-                                    font { family: Config.fontFamily; pixelSize: 12 }
-                                    color: parent.isToday ? Theme.base
+                                    font { family: Config.fontFamily; pixelSize: 12; features: { "tnum": 1 } }
+                                    color: parent.isToday ? Theme.accent
                                         : parent.isValid ? Theme.text
-                                        : Theme.muted
+                                        : Theme.subtle
                                 }
 
                                 MouseArea {

@@ -3,19 +3,23 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
-Rectangle {
+BarCell {
     id: netBlock
     Layout.alignment: Qt.AlignHCenter
-    width: 36; height: 36; radius: 6
+    property var screen: null
     property string iface: Config.wirelessInterface
     property bool up: false
     property string essid: ""
     property int signal: 0
     property string ipAddr: ""
-    color: netMA.containsMouse
-        ? (netBlock.up ? Theme.wirelessColor : Theme.muted)
-        : "transparent"
-    Behavior on color { ColorAnimation { duration: 100 } }
+    hovered: netMA.containsMouse
+    pressed: netMA.pressed
+    // Bluetooth-style everywhere: accent when actually connected, subtle
+    // when not, regardless of barAccentPolicy — there's no meaningful
+    // "always vs state" distinction for a link that's simply up or down.
+    active: netBlock.up
+    urgent: false
+    accentColor: Theme.wirelessColor
 
     Process {
         id: netRefreshProc
@@ -88,8 +92,7 @@ Rectangle {
         anchors.centerIn: parent
         font.family: Config.fontFamily
         font.pixelSize: 18
-        color: netMA.containsMouse ? Theme.base
-            : netBlock.up ? Theme.wirelessColor : Theme.muted
+        color: netBlock.glyphColor
         text: netBlock.up ? "󰖩" : "󰖪"
     }
 
@@ -104,7 +107,7 @@ Rectangle {
             else if (mouse.button === Qt.LeftButton) {
                 if (Config.enableWirelessPanel) {
                     var pos = netBlock.mapToItem(null, 0, netBlock.height / 2)
-                    root.toggleWifiPanel(pos.y)
+                    root.toggleWifiPanel(pos.y, netBlock.screen)
                 } else {
                     netAppProc.running = true
                 }

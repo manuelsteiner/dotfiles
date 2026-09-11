@@ -3,17 +3,20 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
-Rectangle {
+BarCell {
     id: ethBlock
     Layout.alignment: Qt.AlignHCenter
-    width: 36; height: 36; radius: 6
     property string iface: Config.ethernetInterface
     property bool up: false
     property string ipAddr: ""
-    color: ethMA.containsMouse
-        ? (ethBlock.up ? Theme.ethernetColor : Theme.muted)
-        : "transparent"
-    Behavior on color { ColorAnimation { duration: 100 } }
+    hovered: ethMA.containsMouse
+    pressed: ethMA.pressed
+    // Bluetooth-style everywhere: accent when actually connected, subtle
+    // when not, regardless of barAccentPolicy — there's no meaningful
+    // "always vs state" distinction for a link that's simply up or down.
+    active: ethBlock.up
+    urgent: false
+    accentColor: Theme.ethernetColor
 
     Process {
         id: ethRefreshProc
@@ -63,8 +66,7 @@ Rectangle {
         anchors.centerIn: parent
         font.family: Config.fontFamily
         font.pixelSize: 18
-        color: ethMA.containsMouse ? Theme.base
-            : ethBlock.up ? Theme.ethernetColor : Theme.muted
+        color: ethBlock.glyphColor
         text: ethBlock.up ? "󰈀" : "󰈂"
     }
 

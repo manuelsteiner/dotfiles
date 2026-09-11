@@ -32,6 +32,21 @@ hex() {
     printf '%s' "${1#\#}"
 }
 
+# Alpha-blend $2 (top) over $1 (base) at alpha $3 (0-1), both #rrggbb, no '#' output.
+blend() {
+    local base_hex top_hex alpha
+    base_hex="$(hex "$1")"
+    top_hex="$(hex "$2")"
+    alpha="$3"
+    awk -v b="$base_hex" -v t="$top_hex" -v a="$alpha" 'BEGIN {
+        for (i = 0; i < 3; i++) {
+            bb = strtonum("0x" substr(b, i * 2 + 1, 2))
+            tt = strtonum("0x" substr(t, i * 2 + 1, 2))
+            printf "%02x", int(tt * a + bb * (1 - a) + 0.5)
+        }
+    }'
+}
+
 render() {
     local output="$1"
     mkdir -p "$output/quickshell"
@@ -94,6 +109,10 @@ return {
 }
 EOF
 
+    local elev2_hex edge_hex
+    elev2_hex="$(blend "$base" "$text" 0.07)"
+    edge_hex="$(blend "$base" "$text" 0.18)"
+
     cat > "$output/hyprlock.conf" <<EOF
 \$base = 0xff$(hex "$base")
 \$surface = 0xff$(hex "$surface")
@@ -102,6 +121,9 @@ EOF
 \$red = 0xff$(hex "$red")
 \$yellow = 0xff$(hex "$yellow")
 \$accent = 0xff$(hex "${!preferred_accent}")
+\$elev2 = rgba(${elev2_hex}ff)
+\$edge = rgba(${edge_hex}ff)
+\$scrim = rgba(00000080)
 EOF
 
     cat > "$output/fish.fish" <<EOF
@@ -310,6 +332,19 @@ Singleton {
     readonly property color highlightLow: "$highlightLow"
     readonly property color highlightMed: "$highlightMed"
     readonly property color highlightHigh: "$highlightHigh"
+
+    function _ink(a) { return Qt.rgba(text.r, text.g, text.b, a) }
+
+    // Opaque — composited over the palette's own base.
+    readonly property color elev1:   Qt.tint(base, _ink(0.04))   // bar islands
+    readonly property color elev2:   Qt.tint(base, _ink(0.07))   // popouts, toasts, OSD, menus
+    readonly property color edge:    Qt.tint(base, _ink(0.18))   // the 1px border on everything
+
+    // Translucent — composited over whatever they sit on.
+    readonly property color edgeTop: _ink(0.07)   // 1px inner highlight, top edge of popouts
+    readonly property color hover:   _ink(0.10)   // hover fill on cells and rows
+    readonly property color press:   _ink(0.16)   // press fill
+    readonly property color divider: _ink(0.10)   // rules inside popouts, slider tracks
 }
 EOF
 }

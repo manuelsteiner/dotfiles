@@ -3,16 +3,21 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
-Rectangle {
+BarCell {
     id: btBlock
     Layout.alignment: Qt.AlignHCenter
-    width: 36; height: 36; radius: 6
+    property var screen: null
     property bool powered: false
     property var connectedDevices: []  // [{name, battery}]
-    color: btMA.containsMouse
-        ? (btBlock.powered ? Theme.bluetoothColor : Theme.muted)
-        : "transparent"
-    Behavior on color { ColorAnimation { duration: 100 } }
+    hovered: btMA.containsMouse
+    pressed: btMA.pressed
+    // Powered-with-a-device-connected is the notable state; plain "powered on
+    // but idle" isn't worth accenting under the "state" policy.
+    active: Config.barAccentPolicy === "always"
+        ? btBlock.powered
+        : btBlock.powered && btBlock.connectedDevices.length > 0
+    urgent: false
+    accentColor: Theme.bluetoothColor
 
     Process {
         id: btRefreshProc
@@ -75,8 +80,7 @@ Rectangle {
         anchors.centerIn: parent
         font.family: Config.fontFamily
         font.pixelSize: 18
-        color: btMA.containsMouse ? Theme.base
-            : btBlock.powered ? Theme.bluetoothColor : Theme.muted
+        color: btBlock.glyphColor
         text: btBlock.powered ? "󰂯" : "󰂲"
     }
 
@@ -90,7 +94,7 @@ Rectangle {
                 btToggleProc.running = true
             else if (mouse.button === Qt.LeftButton && Config.enableBluetoothPanel) {
                 var pos = parent.mapToItem(null, 0, parent.height / 2)
-                root.toggleBtPanel(pos.y)
+                root.toggleBtPanel(pos.y, btBlock.screen)
             } else if (mouse.button === Qt.LeftButton)
                 btAppProc.running = true
         }

@@ -17,16 +17,16 @@ Scope {
             implicitWidth: 120
             color: "transparent"
 
-            Rectangle {
+            PopoutFrame {
                 anchors.left: parent.left
-                anchors.leftMargin: Config.effectiveBarWidth + Config.barGap
-                y: Config.osdPosition === "top" ? Config.barGap
-                    : Config.osdPosition === "bottom" ? parent.height - height - Config.barGap
+                anchors.leftMargin: Config.effectiveBarWidth + Config.gap
+                // "top" matches the bar's own top gap so the OSD's top edge
+                // lines up with the bar islands' top edge, not the tighter
+                // screen-edge inset toasts use.
+                y: Config.osdPosition === "top" ? Config.gap
+                    : Config.osdPosition === "bottom" ? parent.height - height - Config.edgeInset
                     : Math.round((parent.height - height) / 2)
-                width: 50; height: 200; radius: 12
-                color: Theme.surface
-                border.color: Theme.overlay
-                border.width: 2
+                width: 56; height: 200
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 8
@@ -44,7 +44,7 @@ Scope {
                         Layout.fillHeight: true
                         Layout.alignment: Qt.AlignHCenter
                         width: 8
-                        Rectangle { anchors.fill: parent; radius: 4; color: Theme.highlightMed }
+                        Rectangle { anchors.fill: parent; radius: 4; color: Theme.divider }
                         Rectangle {
                             anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
                             height: parent.height * Math.min(1, root.volOsdValue)
@@ -56,7 +56,8 @@ Scope {
                     Text {
                         Layout.alignment: Qt.AlignHCenter
                         text: Math.round(root.volOsdValue * 100)
-                        font.pixelSize: 12; font.bold: true
+                        font.pixelSize: 11; font.bold: true
+                        font.features: { "tnum": 1 }
                         color: root.volOsdMuted ? Theme.muted : Theme.text
                     }
                 }

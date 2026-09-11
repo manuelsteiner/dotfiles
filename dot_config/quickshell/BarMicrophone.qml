@@ -4,17 +4,22 @@ import Quickshell.Services.Pipewire
 import QtQuick
 import QtQuick.Layouts
 
-Rectangle {
+BarCell {
     id: micBlock
     Layout.alignment: Qt.AlignHCenter
-    width: 36; height: Config.enableMicrophoneBar ? 42 : 36; radius: 6
+    height: Config.enableMicrophoneBar ? 42 : 36
+    property var screen: null
     property var source: Pipewire.defaultAudioSource
     property real vol: source?.audio?.volume ?? 0
     property bool muted: source?.audio?.muted ?? true
-    color: micMA.containsMouse
-        ? (micBlock.muted ? Theme.muted : Theme.microphoneColor)
-        : "transparent"
-    Behavior on color { ColorAnimation { duration: 100 } }
+    hovered: micMA.containsMouse
+    pressed: micMA.pressed
+    // "always": hue at rest, grey to subtle when muted (today's look).
+    // "state": rest at subtle always — muted is a routine, often-intentional
+    // state, not something worth a persistent accent border.
+    active: Config.barAccentPolicy === "always" && !micBlock.muted
+    urgent: false
+    accentColor: Theme.microphoneColor
 
     PwObjectTracker { objects: [micBlock.source] }
 
@@ -24,8 +29,7 @@ Rectangle {
         anchors.verticalCenterOffset: Config.enableMicrophoneBar ? -4 : 0
         font.family: Config.fontFamily
         font.pixelSize: 18
-        color: micMA.containsMouse ? Theme.base
-            : micBlock.muted ? Theme.muted : Theme.microphoneColor
+        color: micBlock.glyphColor
         text: micBlock.muted ? "󰍭" : "󰍬"
     }
 
@@ -36,17 +40,15 @@ Rectangle {
         anchors.bottomMargin: 5
         anchors.horizontalCenter: parent.horizontalCenter
         width: 24; height: 3; radius: 1.5
-        color: micMA.containsMouse ? Theme.highlightMed
-            : micBlock.muted ? Theme.muted : Theme.highlightMed
-        Behavior on color { ColorAnimation { duration: 100 } }
+        color: Theme.divider
+        Behavior on color { ColorAnimation { duration: 80 } }
 
         Rectangle {
             width: parent.width * Math.min(micBlock.vol, 1.0)
             height: parent.height; radius: parent.radius
-            color: micMA.containsMouse ? Theme.base
-                : (micBlock.muted ? Theme.muted : Theme.microphoneColor)
-            Behavior on width { NumberAnimation { duration: 80 } }
-            Behavior on color { ColorAnimation { duration: 100 } }
+            color: micBlock.glyphColor
+            Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+            Behavior on color { ColorAnimation { duration: 80 } }
         }
     }
 
@@ -64,7 +66,7 @@ Rectangle {
                 root.showMicOsd()
             } else if (Config.enableMicrophonePanel) {
                 var pos = parent.mapToItem(null, 0, parent.height / 2)
-                root.toggleMicPanel(pos.y)
+                root.toggleMicPanel(pos.y, micBlock.screen)
             } else {
                 micAppProc.running = true
             }

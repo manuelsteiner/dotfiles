@@ -3,18 +3,21 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
-Rectangle {
+BarCell {
     id: wgBlock
     Layout.alignment: Qt.AlignHCenter
-    width: 36; height: 36; radius: 6
+    property var screen: null
 
     property var tunnels: []
     property bool anyUp: tunnels.some(t => t.up)
 
-    color: wgMA.containsMouse
-        ? (wgBlock.anyUp ? Theme.wireguardColor : Theme.muted)
-        : "transparent"
-    Behavior on color { ColorAnimation { duration: 100 } }
+    hovered: wgMA.containsMouse
+    pressed: wgMA.pressed
+    // A VPN tunnel being up is itself the notable event (unlike plain
+    // ethernet/wifi connectivity), so both policies accent on anyUp.
+    active: wgBlock.anyUp
+    urgent: false
+    accentColor: Theme.wireguardColor
 
     function buildRefreshCmd() {
         var parts = []
@@ -98,8 +101,7 @@ Rectangle {
         anchors.centerIn: parent
         font.family: Config.fontFamily
         font.pixelSize: 18
-        color: wgMA.containsMouse ? Theme.base
-            : wgBlock.anyUp ? Theme.wireguardColor : Theme.muted
+        color: wgBlock.glyphColor
         text: "󰴳"
     }
 
@@ -110,7 +112,7 @@ Rectangle {
         onClicked: {
             if (Config.enableWireguardPanel) {
                 var pos = parent.mapToItem(null, 0, parent.height / 2)
-                root.toggleWgPanel(pos.y)
+                root.toggleWgPanel(pos.y, wgBlock.screen)
             }
         }
         onContainsMouseChanged: {

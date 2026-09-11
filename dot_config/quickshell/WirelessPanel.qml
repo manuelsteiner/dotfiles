@@ -11,12 +11,12 @@ Scope {
             id: wifiPanelWindow
             property var modelData
             screen: modelData
-            visible: root.wifiPanelVisible
+            visible: root.wifiPanelVisible && modelData === root.activePanelScreen
             WlrLayershell.namespace: "qs-wifipanel"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
-            WlrLayershell.margins.left: Config.effectiveBarWidth + Config.barGap - 8
+            WlrLayershell.margins.left: Config.effectiveBarWidth + Config.gap
             anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"
 
@@ -235,19 +235,14 @@ Scope {
                 onClicked: root.wifiPanelVisible = false
             }
 
-            Rectangle {
+            PopoutFrame {
                 anchors.left: parent.left
-                anchors.leftMargin: 8
-                y: Math.max(Config.barGap, Math.min(
-                    parent.height - height - Config.barGap,
+                y: Math.max(Config.gap, Math.min(
+                    parent.height - height - Config.gap,
                     root.wifiPanelY - 18
                 ))
                 width: 280
                 height: panelCol.implicitHeight + 24
-                radius: 12
-                color: Theme.surface
-                border.color: Theme.overlay
-                border.width: 2
 
                 MouseArea { anchors.fill: parent }
 
@@ -266,7 +261,7 @@ Scope {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Wi-Fi"
-                            font { family: Config.fontFamily; pixelSize: 14; bold: true }
+                            font { family: Config.fontFamily; pixelSize: 13; bold: true }
                             color: Theme.text
                         }
 
@@ -276,7 +271,7 @@ Scope {
                             anchors.verticalCenter: parent.verticalCenter
                             width: powerRow.implicitWidth + 12
                             height: 22; radius: 6
-                            color: powerMA.containsMouse ? Theme.highlightMed : Theme.highlightLow
+                            color: powerMA.containsMouse ? Theme.hover : Theme.elev2
                             Behavior on color { ColorAnimation { duration: 80 } }
 
                             Row {
@@ -294,7 +289,7 @@ Scope {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: wifiPanelWindow.powered ? "On" : "Off"
                                     font { family: Config.fontFamily; pixelSize: 11 }
-                                    color: wifiPanelWindow.powered ? Theme.wirelessColor : Theme.muted
+                                    color: wifiPanelWindow.powered ? Theme.wirelessColor : Theme.subtle
                                 }
                             }
 
@@ -311,56 +306,59 @@ Scope {
                         }
                     }
 
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.highlightMed }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.divider }
 
-                    // Empty / off state
-                    Text {
-                        visible: !wifiPanelWindow.powered
-                        text: "Wi-Fi is off"
-                        font { family: Config.fontFamily; pixelSize: 12 }
-                        color: Theme.muted
-                    }
+                    // Network list — scrolls internally when it overflows the panel
+                    Item {
+                        id: wifiListContainer
+                        visible: wifiPanelWindow.powered && wifiPanelWindow.networks.length > 0
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Math.min(wifiListCol.implicitHeight, 320)
 
-                    Text {
-                        visible: wifiPanelWindow.powered && wifiPanelWindow.networks.length === 0 && !wifiPanelWindow.scanning
-                        text: "No networks found"
-                        font { family: Config.fontFamily; pixelSize: 12 }
-                        color: Theme.muted
-                    }
+                        Flickable {
+                            id: wifiListFlick
+                            anchors.fill: parent
+                            contentWidth: width
+                            contentHeight: wifiListCol.implicitHeight
+                            clip: true
+                            boundsBehavior: Flickable.StopAtBounds
 
-                    Text {
-                        visible: wifiPanelWindow.powered && wifiPanelWindow.networks.length === 0 && wifiPanelWindow.scanning
-                        text: "Scanning..."
-                        font { family: Config.fontFamily; pixelSize: 12 }
-                        color: Theme.muted
-                    }
+                            ColumnLayout {
+                                id: wifiListCol
+                                width: wifiListFlick.width
+                                spacing: 8
 
-                    // Connected networks
-                    Repeater {
-                        model: wifiPanelWindow.connectedNetworks
-                        delegate: WifiNetworkDelegate {
-                            required property var modelData
-                            network: modelData
-                            connectedIp: wifiPanelWindow.connectedIp
-                            connectedSignalPct: wifiPanelWindow.connectedSignal
-                            pendingSsid: wifiPanelWindow.pendingSsid
-                            Layout.fillWidth: true
-                            onToggle: wifiDisconnectProc.running = true
-                            onSubmitPassword: pass => wifiPanelWindow.submitPassword(modelData.ssid, pass)
+                                // Connected networks
+                                Repeater {
+                                    model: wifiPanelWindow.connectedNetworks
+                                    delegate: WifiNetworkDelegate {
+                                        required property var modelData
+                                        network: modelData
+                                        connectedIp: wifiPanelWindow.connectedIp
+                                        connectedSignalPct: wifiPanelWindow.connectedSignal
+                                        pendingSsid: wifiPanelWindow.pendingSsid
+                                        Layout.fillWidth: true
+                                        onToggle: wifiDisconnectProc.running = true
+                                        onSubmitPassword: pass => wifiPanelWindow.submitPassword(modelData.ssid, pass)
+                                    }
+                                }
+
+                                // Available networks
+                                Repeater {
+                                    model: wifiPanelWindow.availableNetworks
+                                    delegate: WifiNetworkDelegate {
+                                        required property var modelData
+                                        network: modelData
+                                        pendingSsid: wifiPanelWindow.pendingSsid
+                                        Layout.fillWidth: true
+                                        onToggle: wifiPanelWindow.connectNetwork(modelData.ssid, modelData.security)
+                                        onSubmitPassword: pass => wifiPanelWindow.submitPassword(modelData.ssid, pass)
+                                    }
+                                }
+                            }
                         }
-                    }
 
-                    // Available networks
-                    Repeater {
-                        model: wifiPanelWindow.availableNetworks
-                        delegate: WifiNetworkDelegate {
-                            required property var modelData
-                            network: modelData
-                            pendingSsid: wifiPanelWindow.pendingSsid
-                            Layout.fillWidth: true
-                            onToggle: wifiPanelWindow.connectNetwork(modelData.ssid, modelData.security)
-                            onSubmitPassword: pass => wifiPanelWindow.submitPassword(modelData.ssid, pass)
-                        }
+                        OverlayScrollBar { flickable: wifiListFlick }
                     }
                 }
             }
@@ -384,9 +382,9 @@ Scope {
         Rectangle {
             width: del.width
             height: 36
-            radius: 8
-            color: network.connected ? Theme.overlay
-                : ma.containsMouse ? Theme.highlightMed : "transparent"
+            radius: Config.radiusCell
+            color: network.connected ? Theme.elev2
+                : ma.containsMouse ? Theme.hover : "transparent"
             border.color: network.connected ? Theme.wirelessColor : "transparent"
             border.width: network.connected ? 1 : 0
             Behavior on color { ColorAnimation { duration: 80 } }
@@ -466,8 +464,8 @@ Scope {
             visible: del.showPassword
             width: del.width
             height: 36
-            radius: 8
-            color: Theme.highlightLow
+            radius: Config.radiusCell
+            color: Theme.elev2
 
             RowLayout {
                 anchors.fill: parent
@@ -500,7 +498,7 @@ Scope {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Enter password"
                             font: passInput.font
-                            color: Theme.muted
+                            color: Theme.subtle
                         }
                     }
                 }
