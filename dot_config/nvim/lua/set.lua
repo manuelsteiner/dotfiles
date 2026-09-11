@@ -23,8 +23,6 @@ vim.opt['softtabstop'] = 4
 vim.opt['shiftwidth'] = 4
 vim.opt['expandtab'] = true
 
-vim.opt['colorcolumn'] = { 80 }
-
 vim.opt['backupdir'] = vim.fn.expand('~/.nvim/backup/')
 vim.opt['directory'] = vim.fn.expand('~/.nvim/swap/')
 vim.opt['undodir'] = vim.fn.expand('~/.nvim/undo/')

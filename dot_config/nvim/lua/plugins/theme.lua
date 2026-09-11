@@ -68,24 +68,26 @@ local function apply_oled_ui()
     set_background({ "SnacksPickerListCursorLine", "SnacksPickerPreviewCursorLine" }, selection, true)
 end
 
-local oled_preview_namespace = vim.api.nvim_create_namespace("dotfiles_oled_snacks_preview")
+local oled_picker_namespace = vim.api.nvim_create_namespace("dotfiles_oled_snacks_picker")
 
-local function apply_oled_preview_columns()
+local function apply_oled_picker_surfaces()
     local surface = active_theme.highlight_low or "#18181a"
     local groups = {
-        "Normal", "SignColumn", "FoldColumn", "LineNr", "EndOfBuffer",
-        "SnacksPickerPreview",
+        "Normal", "NormalNC", "NormalFloat", "SignColumn", "FoldColumn", "LineNr", "EndOfBuffer",
+        "SnacksNormal", "SnacksNormalNC", "SnacksPicker", "SnacksPickerBox",
+        "SnacksPickerInput", "SnacksPickerList", "SnacksPickerPreview",
     }
     for _, win in ipairs(vim.api.nvim_list_wins()) do
-        if vim.w[win].snacks_picker_preview then
+        local filetype = vim.bo[vim.api.nvim_win_get_buf(win)].filetype
+        if filetype:match("^snacks_picker_") or filetype == "snacks_layout_box" then
             for _, group in ipairs(groups) do
                 local highlight = resolved_highlight(group)
                 highlight.default = nil
                 highlight.link = nil
                 highlight.bg = surface
-                vim.api.nvim_set_hl(oled_preview_namespace, group, highlight)
+                vim.api.nvim_set_hl(oled_picker_namespace, group, highlight)
             end
-            vim.api.nvim_win_set_hl_ns(win, oled_preview_namespace)
+            vim.api.nvim_win_set_hl_ns(win, oled_picker_namespace)
         end
     end
 end
@@ -161,7 +163,7 @@ spec.config = function()
         vim.api.nvim_create_autocmd({ "WinNew", "BufWinEnter" }, {
             group = oled_preview_group,
             callback = function()
-                vim.defer_fn(apply_oled_preview_columns, 50)
+                vim.defer_fn(apply_oled_picker_surfaces, 50)
             end,
         })
         vim.api.nvim_create_autocmd("VimEnter", {
@@ -169,7 +171,7 @@ spec.config = function()
             callback = function()
                 vim.schedule(function()
                     apply_oled_ui()
-                    apply_oled_preview_columns()
+                    apply_oled_picker_surfaces()
                 end)
             end,
         })
