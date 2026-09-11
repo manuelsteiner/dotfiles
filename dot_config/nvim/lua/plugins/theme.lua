@@ -8,6 +8,36 @@ local active_theme = active_theme()
 local colorscheme = active_theme.colorscheme
 local oled = active_theme.oled == true
 
+local function set_background(groups, background)
+    for _, group in ipairs(groups) do
+        local highlight = vim.api.nvim_get_hl(0, { name = group, link = false })
+        if next(highlight) ~= nil then
+            highlight.bg = background
+            vim.api.nvim_set_hl(0, group, highlight)
+        end
+    end
+end
+
+local function apply_oled_ui()
+    set_background({ "Normal", "NormalNC", "EndOfBuffer", "SignColumn", "LineNr", "FoldColumn" }, "#000000")
+
+    local surface = active_theme.surface or "#18181a"
+    local overlay = active_theme.overlay or "#2a2a2d"
+    local selection = active_theme.highlight_med or "#353539"
+
+    set_background({
+        "NormalFloat", "Float", "NvimFloat", "FloatBorder", "FloatTitle", "FloatFooter",
+        "Pmenu", "PmenuKind", "PmenuExtra",
+        "BlinkCmpMenu", "BlinkCmpDoc", "BlinkCmpSignatureHelp",
+    }, surface)
+    set_background({ "PmenuSbar", "BlinkCmpScrollBarGutter" }, overlay)
+    set_background({
+        "PmenuSel", "PmenuKindSel", "PmenuExtraSel", "PmenuMatchSel", "PmenuThumb",
+        "BlinkCmpMenuSelection", "BlinkCmpDocCursorLine", "BlinkCmpSignatureHelpActiveParameter",
+        "BlinkCmpScrollBarThumb",
+    }, selection)
+end
+
 local themes = {
     ["rose-pine"] = {
         "rose-pine/neovim",
@@ -74,11 +104,13 @@ spec.config = function()
     if configure then configure() end
     vim.cmd.colorscheme(name)
     if oled then
-        for _, group in ipairs({ "Normal", "NormalNC", "EndOfBuffer", "SignColumn", "LineNr", "FoldColumn" }) do
-            local highlight = vim.api.nvim_get_hl(0, { name = group, link = false })
-            highlight.bg = "#000000"
-            vim.api.nvim_set_hl(0, group, highlight)
-        end
+        apply_oled_ui()
+        vim.api.nvim_create_autocmd("VimEnter", {
+            once = true,
+            callback = function()
+                vim.schedule(apply_oled_ui)
+            end,
+        })
     end
 end
 
