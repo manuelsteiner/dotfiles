@@ -357,37 +357,47 @@ Scope {
                                 width: wifiListFlick.width
                                 spacing: 8
 
-                                // Connected networks
+                                // Connected networks — integer-count model with
+                                // self-index lookup, not the array itself:
+                                // these network lists are rebuilt wholesale on
+                                // every scan/poll cycle, and Qt 6.11's
+                                // Repeater can segfault in
+                                // QQuickRepeater::regenerate() when a plain
+                                // JS-array model gets reassigned that often
+                                // (this is what crashed NotificationPanel.qml
+                                // before it got the same treatment).
                                 Repeater {
-                                    model: wifiPanelWindow.connectedNetworks
+                                    model: wifiPanelWindow.connectedNetworks.length
                                     delegate: WifiNetworkDelegate {
-                                        required property var modelData
+                                        id: connDel
                                         required property int index
-                                        network: modelData
+                                        readonly property var modelData: wifiPanelWindow.connectedNetworks[index]
+                                        network: connDel.modelData
                                         connectedIp: wifiPanelWindow.connectedIp
                                         connectedSignalPct: wifiPanelWindow.connectedSignal
                                         pendingSsid: wifiPanelWindow.pendingSsid
                                         isFocused: index === wifiPanelWindow.focusedIndex
                                         Layout.fillWidth: true
                                         onToggle: wifiDisconnectProc.running = true
-                                        onSubmitPassword: pass => wifiPanelWindow.submitPassword(modelData.ssid, pass)
+                                        onSubmitPassword: pass => wifiPanelWindow.submitPassword(connDel.modelData.ssid, pass)
                                         onHovered: wifiPanelWindow.focusedIndex = index
                                     }
                                 }
 
                                 // Available networks
                                 Repeater {
-                                    model: wifiPanelWindow.availableNetworks
+                                    model: wifiPanelWindow.availableNetworks.length
                                     delegate: WifiNetworkDelegate {
-                                        required property var modelData
+                                        id: availDel
                                         required property int index
+                                        readonly property var modelData: wifiPanelWindow.availableNetworks[index]
                                         readonly property int globalIndex: wifiPanelWindow.connectedNetworks.length + index
-                                        network: modelData
+                                        network: availDel.modelData
                                         pendingSsid: wifiPanelWindow.pendingSsid
                                         isFocused: globalIndex === wifiPanelWindow.focusedIndex
                                         Layout.fillWidth: true
-                                        onToggle: wifiPanelWindow.connectNetwork(modelData.ssid, modelData.security)
-                                        onSubmitPassword: pass => wifiPanelWindow.submitPassword(modelData.ssid, pass)
+                                        onToggle: wifiPanelWindow.connectNetwork(availDel.modelData.ssid, availDel.modelData.security)
+                                        onSubmitPassword: pass => wifiPanelWindow.submitPassword(availDel.modelData.ssid, pass)
                                         onHovered: wifiPanelWindow.focusedIndex = globalIndex
                                     }
                                 }

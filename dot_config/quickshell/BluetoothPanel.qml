@@ -314,18 +314,27 @@ Scope {
                                 width: btListFlick.width
                                 spacing: 8
 
-                                // Connected devices
+                                // Connected devices — integer-count model with
+                                // self-index lookup, not the array itself:
+                                // these device lists are rebuilt wholesale on
+                                // every ~3s poll, and Qt 6.11's Repeater can
+                                // segfault in QQuickRepeater::regenerate()
+                                // when a plain JS-array model gets reassigned
+                                // that often (this is what crashed
+                                // NotificationPanel.qml before it got the
+                                // same treatment).
                                 Repeater {
-                                    model: btPanelWindow.connectedDevices
+                                    model: btPanelWindow.connectedDevices.length
                                     delegate: BtDeviceDelegate {
-                                        required property var modelData
+                                        id: connDel
                                         required property int index
-                                        device: modelData
+                                        readonly property var modelData: btPanelWindow.connectedDevices[index]
+                                        device: connDel.modelData
                                         isFocused: index === btPanelWindow.focusedIndex
                                         Layout.fillWidth: true
                                         onToggle: {
                                             btConnectProc.action = "disconnect"
-                                            btConnectProc.mac = modelData.mac
+                                            btConnectProc.mac = connDel.modelData.mac
                                             btConnectProc.running = true
                                         }
                                         onHovered: btPanelWindow.focusedIndex = index
@@ -334,17 +343,18 @@ Scope {
 
                                 // Disconnected (paired) devices
                                 Repeater {
-                                    model: btPanelWindow.disconnectedDevices
+                                    model: btPanelWindow.disconnectedDevices.length
                                     delegate: BtDeviceDelegate {
-                                        required property var modelData
+                                        id: discDel
                                         required property int index
+                                        readonly property var modelData: btPanelWindow.disconnectedDevices[index]
                                         readonly property int globalIndex: btPanelWindow.connectedDevices.length + index
-                                        device: modelData
+                                        device: discDel.modelData
                                         isFocused: globalIndex === btPanelWindow.focusedIndex
                                         Layout.fillWidth: true
                                         onToggle: {
                                             btConnectProc.action = "connect"
-                                            btConnectProc.mac = modelData.mac
+                                            btConnectProc.mac = discDel.modelData.mac
                                             btConnectProc.running = true
                                         }
                                         onHovered: btPanelWindow.focusedIndex = globalIndex
@@ -353,17 +363,18 @@ Scope {
 
                                 // Nearby (discovered, not paired) devices
                                 Repeater {
-                                    model: btPanelWindow.nearbyDevices
+                                    model: btPanelWindow.nearbyDevices.length
                                     delegate: BtNearbyDelegate {
-                                        required property var modelData
+                                        id: nearDel
                                         required property int index
+                                        readonly property var modelData: btPanelWindow.nearbyDevices[index]
                                         readonly property int globalIndex: btPanelWindow.connectedDevices.length
                                             + btPanelWindow.disconnectedDevices.length + index
-                                        device: modelData
+                                        device: nearDel.modelData
                                         isFocused: globalIndex === btPanelWindow.focusedIndex
                                         Layout.fillWidth: true
                                         onConnect: {
-                                            btPairConnectProc.mac = modelData.mac
+                                            btPairConnectProc.mac = nearDel.modelData.mac
                                             btPairConnectProc.running = true
                                         }
                                         onHovered: btPanelWindow.focusedIndex = globalIndex

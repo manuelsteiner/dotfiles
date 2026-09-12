@@ -835,10 +835,15 @@ Scope {
                                     spacing: 2
 
                                     Repeater {
-                                        model: ccWindow.themeList
+                                        // Integer-count model with self-index
+                                        // lookup, not the array itself — see
+                                        // the note on the device-list
+                                        // Repeaters in BluetoothPanel.qml.
+                                        model: ccWindow.themeList.length
                                         delegate: Rectangle {
                                             id: themeRow
-                                            required property string modelData
+                                            required property int index
+                                            readonly property string modelData: ccWindow.themeList[index]
                                             readonly property bool isCurrent: modelData === ccWindow.currentThemeName
                                             Layout.fillWidth: true
                                             height: 28

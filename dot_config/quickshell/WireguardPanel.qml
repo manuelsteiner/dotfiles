@@ -166,18 +166,25 @@ Scope {
                         color: Theme.subtle
                     }
 
-                    // Connected tunnels
+                    // Connected tunnels — integer-count model with self-index
+                    // lookup, not the array itself: `tunnels` is rebuilt
+                    // wholesale on every ~3s poll, and Qt 6.11's Repeater can
+                    // segfault in QQuickRepeater::regenerate() when a plain
+                    // JS-array model gets reassigned that often (this is what
+                    // crashed NotificationPanel.qml before it got the same
+                    // treatment).
                     Repeater {
-                        model: wgPanelWindow.upTunnels
+                        model: wgPanelWindow.upTunnels.length
                         delegate: WgTunnelDelegate {
-                            required property var modelData
+                            id: upDel
                             required property int index
-                            tunnel: modelData
+                            readonly property var modelData: wgPanelWindow.upTunnels[index]
+                            tunnel: upDel.modelData
                             isFocused: index === wgPanelWindow.focusedIndex
                             Layout.fillWidth: true
                             onToggle: {
                                 wgToggleProc.action = "down"
-                                wgToggleProc.iface = modelData.iface
+                                wgToggleProc.iface = upDel.modelData.iface
                                 wgToggleProc.running = true
                             }
                             onHovered: wgPanelWindow.focusedIndex = index
@@ -186,17 +193,18 @@ Scope {
 
                     // Disconnected tunnels
                     Repeater {
-                        model: wgPanelWindow.downTunnels
+                        model: wgPanelWindow.downTunnels.length
                         delegate: WgTunnelDelegate {
-                            required property var modelData
+                            id: downDel
                             required property int index
+                            readonly property var modelData: wgPanelWindow.downTunnels[index]
                             readonly property int globalIndex: wgPanelWindow.upTunnels.length + index
-                            tunnel: modelData
+                            tunnel: downDel.modelData
                             isFocused: globalIndex === wgPanelWindow.focusedIndex
                             Layout.fillWidth: true
                             onToggle: {
                                 wgToggleProc.action = "up"
-                                wgToggleProc.iface = modelData.iface
+                                wgToggleProc.iface = downDel.modelData.iface
                                 wgToggleProc.running = true
                             }
                             onHovered: wgPanelWindow.focusedIndex = globalIndex
