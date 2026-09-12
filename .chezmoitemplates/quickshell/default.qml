@@ -97,7 +97,11 @@ Singleton {
     // Third-party tray/notification-app icons are full-colour bitmaps outside
     // the theme system. "native": untouched. "desaturate": grey at rest, full
     // colour on hover. "dim": opacity 0.75 at rest, 1.0 on hover.
-    property string trayIconStyle: "desaturate"
+    // "desaturate+dim": both at once — greyed and dimmed at rest, full colour
+    // and opacity on hover. Worth it for icons that are both saturated and
+    // near-white (e.g. some apps' tray glyphs), which are the most
+    // burn-in-prone thing on the bar otherwise.
+    property string trayIconStyle: "desaturate+dim"
 
     property int osdDuration: 1500
     property int osdStartupDelay: 2000

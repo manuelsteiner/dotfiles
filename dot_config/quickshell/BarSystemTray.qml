@@ -26,9 +26,9 @@ Column {
                 source: modelData.icon
                 width: 18; height: 18
                 sourceSize.width: 18; sourceSize.height: 18
-                opacity: Config.trayIconStyle === "dim"
+                opacity: (Config.trayIconStyle === "dim" || Config.trayIconStyle === "desaturate+dim")
                     ? (trayMA.containsMouse ? 1.0 : 0.75) : 1.0
-                layer.enabled: Config.trayIconStyle === "desaturate"
+                layer.enabled: Config.trayIconStyle === "desaturate" || Config.trayIconStyle === "desaturate+dim"
                 layer.effect: MultiEffect {
                     saturation: trayMA.containsMouse ? 0 : -1
                 }
