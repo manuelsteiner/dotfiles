@@ -386,8 +386,16 @@ ShellRoot {
                 _live: notification
             }
 
+            // Sender-initiated close (e.g. Signal/Element withdrawing a
+            // notification once you've read the message in-app) means the
+            // notification is genuinely gone — drop it from the centre too,
+            // not just the toast. Regression: this used to clear both: the
+            // entry-snapshot rewrite (see the comment above) only wired this
+            // into toastNotifications, leaving read/withdrawn notifications
+            // stuck in storedNotifications indefinitely.
             notification.closed.connect(function() {
                 root.toastNotifications = root.toastNotifications.filter(n => n !== entry)
+                root.storedNotifications = root.storedNotifications.filter(n => n !== entry)
             })
 
             // Always store the notification (sorted by urgency)
