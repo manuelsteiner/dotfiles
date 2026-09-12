@@ -101,7 +101,7 @@ Singleton {
     // and opacity on hover. Worth it for icons that are both saturated and
     // near-white (e.g. some apps' tray glyphs), which are the most
     // burn-in-prone thing on the bar otherwise.
-    property string trayIconStyle: "desaturate+dim"
+    property string trayIconStyle: "dim"
 
     property int osdDuration: 1500
     property int osdStartupDelay: 2000
