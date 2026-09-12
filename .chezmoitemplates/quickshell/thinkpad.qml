@@ -100,7 +100,7 @@ Singleton {
     // Third-party tray/notification-app icons are full-colour bitmaps outside
     // the theme system. "native": untouched. "desaturate": grey at rest, full
     // colour on hover. "dim": opacity 0.75 at rest, 1.0 on hover.
-    property string trayIconStyle: "native"
+    property string trayIconStyle: "desaturate"
 
     // ── Timing ──
     property int osdDuration: 1500
