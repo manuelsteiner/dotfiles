@@ -88,7 +88,11 @@ BarCell {
 
     Component.onCompleted: netRefreshProc.running = true
 
+    onUpChanged: iconBlip.trigger()
+    IconBlip { id: iconBlip; target: netIcon }
+
     Text {
+        id: netIcon
         anchors.centerIn: parent
         font.family: Config.fontFamily
         font.pixelSize: 18

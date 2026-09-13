@@ -23,8 +23,25 @@ BarCell {
     urgent: false
     accentColor: Theme.notificationColor
 
+    // DND is a deliberate click — shake the bell. A rising unread count is
+    // passive (something arrived) — pop the badge instead, and only on the
+    // way up, not when notifications are cleared/dismissed.
+    property int _lastCount: root.storedNotifications.length
+    Connections {
+        target: root
+        function onStoredNotificationsChanged() {
+            if (root.storedNotifications.length > bellBlock._lastCount) badgeBlip.trigger()
+            bellBlock._lastCount = root.storedNotifications.length
+        }
+        function onDndEnabledChanged() { iconShake.trigger() }
+    }
+    IconShake { id: iconShake }
+    IconBlip { id: badgeBlip; target: badgeRect }
+
     Text {
+        id: bellIcon
         anchors.centerIn: parent
+        transform: [iconShake]
         font.family: Config.fontFamily
         font.pixelSize: 18
         color: bellBlock.glyphColor
@@ -33,6 +50,7 @@ BarCell {
     }
 
     Rectangle {
+        id: badgeRect
         // Outlined, not filled (A7 burn-in note): this badge is lit for
         // hours at a time, so only the stroke stays saturated.
         visible: root.storedNotifications.length > 0

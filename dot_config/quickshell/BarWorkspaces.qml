@@ -77,7 +77,7 @@ Item {
         y: activeIndex * (36 + 4)
 
         Behavior on y {
-            enabled: Config.enableWorkspaceTransition
+            enabled: Config.enableWorkspaceTransition && !Config.reduceMotion
             NumberAnimation {
                 duration: 240
                 easing.type: Easing.OutCubic
@@ -101,9 +101,16 @@ Item {
                 property bool hovered: wsMA.containsMouse
                 property bool urgent: Hyprland.workspaces.values.some(w => w.id === modelData.ws && w.urgent)
 
+                // Same reasoning as BarCell.qml's activeHoverColor: this cell
+                // has nothing opaque behind it but the transparent bar
+                // window, so brightening an active workspace on hover needs
+                // an opaque tint, not a translucent Theme.press overlay
+                // (which would show the desktop through it).
+                readonly property color activeHoverColor: Qt.tint(Theme.elev2, Theme.press)
+
                 color: {
                     if (outlineStyle) {
-                        if (active) return Theme.elev2
+                        if (active) return hovered ? wsCell.activeHoverColor : Theme.elev2
                         if (hovered) return Theme.hover
                         return "transparent"
                     }

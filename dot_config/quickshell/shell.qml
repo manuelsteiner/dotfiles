@@ -302,6 +302,13 @@ ShellRoot {
     property var toastNotifications: []
     property var storedNotifications: []
     property bool notifPanelVisible: false
+    // Toasts render independently per monitor (one PanelWindow per screen),
+    // so hovering the copy on one screen doesn't inherently affect the
+    // other's countdown. Shared here by notification id so hovering either
+    // one pauses both — otherwise the un-hovered twin just expires on
+    // schedule regardless, which reads as "hovering does nothing" even
+    // though the hovered copy actually paused correctly.
+    property var hoveredToastIds: []
 
     // Auto-DND driven by the focused window being fullscreen. Notifications are
     // still stored while suppressed – only the toast is withheld.
@@ -383,6 +390,13 @@ ShellRoot {
                 body: notification.body,
                 urgency: notification.urgency ?? 1,
                 actions: notification.actions,
+                // Snapshot once at arrival, not read live — in
+                // Config.toastMonitorMode "focused", a toast stays on
+                // whichever monitor was focused when it showed up. Without
+                // this it would jump to wherever focus moves next, which is
+                // exactly the "distracting" behaviour that setting exists to
+                // avoid.
+                toastScreen: Hyprland.focusedMonitor?.name ?? null,
                 _live: notification
             }
 

@@ -23,10 +23,15 @@ BarCell {
 
     PwObjectTracker { objects: [micBlock.source] }
 
+    onMutedChanged: iconShake.trigger()
+    IconShake { id: iconShake }
+
     Text {
+        id: micIcon
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
         anchors.verticalCenterOffset: Config.enableMicrophoneBar ? -4 : 0
+        transform: [iconShake]
         font.family: Config.fontFamily
         font.pixelSize: 18
         color: micBlock.glyphColor

@@ -63,7 +63,11 @@ BarCell {
         onTriggered: ethRefreshProc.running = true
     }
 
+    onUpChanged: iconBlip.trigger()
+    IconBlip { id: iconBlip; target: ethIcon }
+
     Text {
+        id: ethIcon
         anchors.centerIn: parent
         font.family: Config.fontFamily
         font.pixelSize: 18

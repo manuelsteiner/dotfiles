@@ -417,18 +417,32 @@ Scope {
                                         elide: Text.ElideRight
                                     }
 
+                                    // See NotificationToasts.qml for why
+                                    // empty-label actions are filtered rather
+                                    // than rendered as a blank pill.
                                     RowLayout {
-                                        visible: (groupDelegate.primary.actions ?? []).length > 0
+                                        readonly property var visibleActions: (groupDelegate.primary.actions ?? []).filter(a => (a.text ?? "") !== "")
+                                        visible: visibleActions.length > 0
                                         Layout.fillWidth: true
                                         Layout.topMargin: 2
                                         spacing: 6
                                         Repeater {
-                                            model: groupDelegate.primary.actions ?? []
+                                            model: parent.visibleActions
                                             delegate: Rectangle {
                                                 required property var modelData
                                                 Layout.fillWidth: true
                                                 height: 24; radius: Config.radiusCell
-                                                color: actionHover.containsMouse ? Theme.hover : Theme.divider
+                                                // Hairline-outline + hover/press-fill,
+                                                // matching every other button in the
+                                                // shell — see NotificationToasts.qml
+                                                // for why the rest state keeps a
+                                                // faint fill instead of literal
+                                                // transparent (edge vs. elev2
+                                                // contrast is too low otherwise).
+                                                color: actionHover.pressed ? Theme.press
+                                                    : actionHover.containsMouse ? Theme.hover : Theme.divider
+                                                border.width: 1
+                                                border.color: Theme.edge
                                                 Behavior on color { ColorAnimation { duration: 80 } }
                                                 Text {
                                                     anchors.centerIn: parent

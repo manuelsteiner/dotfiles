@@ -23,10 +23,15 @@ BarCell {
 
     PwObjectTracker { objects: [volBlock.sink] }
 
+    onMutedChanged: iconShake.trigger()
+    IconShake { id: iconShake }
+
     Text {
+        id: volIcon
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
         anchors.verticalCenterOffset: Config.enableVolumeBar ? -4 : 0
+        transform: [iconShake]
         font.family: Config.fontFamily
         font.pixelSize: 18
         color: volBlock.glyphColor

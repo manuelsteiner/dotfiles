@@ -97,7 +97,11 @@ BarCell {
         onTriggered: wgRefreshProc.running = true
     }
 
+    onAnyUpChanged: iconBlip.trigger()
+    IconBlip { id: iconBlip; target: wgIcon }
+
     Text {
+        id: wgIcon
         anchors.centerIn: parent
         font.family: Config.fontFamily
         font.pixelSize: 18

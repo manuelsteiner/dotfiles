@@ -32,6 +32,27 @@ Column {
                 layer.effect: MultiEffect {
                     saturation: trayMA.containsMouse ? 0 : -1
                 }
+
+                // Pop in on first appearance. Deliberately not a Positioner
+                // `add:` transition (Column's declarative mechanism for
+                // this) — that left an icon permanently stuck mid-scale
+                // after repeated real-world model churn, a known instability
+                // when siblings reposition while a positioner transition is
+                // still in flight. A one-shot animation tied to this
+                // delegate's own creation can't be interrupted by that.
+                scale: 0
+                Component.onCompleted: {
+                    if (Config.reduceMotion) trayIcon.scale = 1
+                    else popIn.start()
+                }
+                NumberAnimation {
+                    id: popIn
+                    target: trayIcon
+                    property: "scale"
+                    to: 1
+                    duration: 260
+                    easing.type: Easing.OutBack
+                }
             }
             MouseArea {
                 id: trayMA

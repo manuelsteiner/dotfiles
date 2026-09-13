@@ -97,6 +97,15 @@ Singleton {
     property int barIdleTimeout: 120000 // ms
     property real barIdleOpacity: 0.55
 
+    // Master switch for the small decorative motion touches — icon shakes
+    // (mute/DND toggles), blips (connectivity state changes, unread-badge
+    // pops), tray-icon pop-in, and the workspace-switch slide. Doesn't touch
+    // the plain 80ms hover/state colour fades used throughout — those are
+    // state feedback, not motion for its own sake. Named after the
+    // OS-standard "reduce motion" accessibility setting (macOS, Windows,
+    // Android all call it exactly that) rather than inventing new wording.
+    property bool reduceMotion: false
+
     // Third-party tray/notification-app icons are full-colour bitmaps outside
     // the theme system. "native": untouched. "desaturate": grey at rest, full
     // colour on hover. "dim": opacity 0.75 at rest, 1.0 on hover.
@@ -126,8 +135,19 @@ Singleton {
     property int maxStoredNotifications: 20
     // Set above 1 to stack multiple live toasts. Set to 0 to disable them.
     property int maxLiveNotificationToasts: 1
-    // 2px hairline on normal-urgency toasts showing time until auto-expire.
-    property bool toastProgressHairline: true
+    // Countdown-to-auto-expire indicator on normal-urgency toasts. "hairline":
+    // 2px bar along the bottom edge. "circle": a ring in the corner where the
+    // close button sits, swapping to the close button on hover. "none": no
+    // visual (still auto-expires on the same schedule). Hovering the toast
+    // always pauses the countdown, regardless of style.
+    property string toastCountdownStyle: "circle"
+    // "all": every monitor gets its own copy (today's behaviour). "focused":
+    // only the currently-focused monitor shows it, matching how macOS/Windows
+    // both only ever show on one display — but tracking the focused one
+    // dynamically rather than a fixed "main"/"primary" display, which is the
+    // actual complaint people have with both of those (banner lands on
+    // whichever monitor you're not looking at).
+    property string toastMonitorMode: "all"
     // Collapse consecutive same-app notifications in the centre into one
     // expandable card. Grouping is by app identity (whatever the sender set
     // as its name over DBus), not message content — tools that default to a

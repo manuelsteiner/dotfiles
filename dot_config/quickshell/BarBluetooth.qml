@@ -76,7 +76,11 @@ BarCell {
 
     Component.onCompleted: btRefreshProc.running = true
 
+    onPoweredChanged: iconBlip.trigger()
+    IconBlip { id: iconBlip; target: btIcon }
+
     Text {
+        id: btIcon
         anchors.centerIn: parent
         font.family: Config.fontFamily
         font.pixelSize: 18
