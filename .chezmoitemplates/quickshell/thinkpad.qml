@@ -147,7 +147,7 @@ Singleton {
     // dynamically rather than a fixed "main"/"primary" display, which is the
     // actual complaint people have with both of those (banner lands on
     // whichever monitor you're not looking at).
-    property string toastMonitorMode: "all"
+    property string toastMonitorMode: "focused"
     // Collapse consecutive same-app notifications in the centre into one
     // expandable card. Grouping is by app identity (whatever the sender set
     // as its name over DBus), not message content — tools that default to a
