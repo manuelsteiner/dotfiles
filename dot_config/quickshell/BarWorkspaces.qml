@@ -67,6 +67,13 @@ Item {
         Hyprland.dispatch('hl.dsp.focus({ workspace = ' + Config.workspaces[index].ws + ' })')
     }
 
+    function wsIndexForId(id) {
+        for (var i = 0; i < Config.workspaces.length; i++) {
+            if (Config.workspaces[i].ws === id) return i
+        }
+        return -1
+    }
+
     // Right-click a workspace to pull/push it to whichever other monitor
     // it isn't currently on. With exactly two monitors this is a clean
     // toggle; with more than two it moves to the first other one found.
@@ -85,6 +92,82 @@ Item {
         Hyprland.dispatch('hl.dsp.workspace.move({ workspace = ' + wsId + ', monitor = "' + other.name + '" })')
         if (Config.workspaceMoveFollowsFocus)
             Hyprland.dispatch('hl.dsp.focus({ workspace = ' + wsId + ' })')
+    }
+
+    // Detects a workspace's monitor actually changing, from *any* trigger —
+    // this bar's own right-click above, the other bar's right-click, or
+    // Hyprland's own "mainMod + SHIFT + O" keybind, which bypasses the bar
+    // entirely. A plain snapshot-and-diff on a reactive binding catches all
+    // three the same way, with no need to special-case who initiated it.
+    readonly property var workspaceMonitorById: {
+        var map = {}
+        var vals = Hyprland.workspaces.values
+        for (var i = 0; i < vals.length; i++)
+            map[vals[i].id] = vals[i].monitor ? vals[i].monitor.name : ""
+        return map
+    }
+    property var _prevWorkspaceMonitorById: null
+
+    // Hyprland's own workspace.move dispatcher shifts input focus to the
+    // destination monitor as part of the move (your active workspace takes
+    // your focus with it) — by the time workspaceMonitorById's diff below
+    // notices anything, Hyprland.focusedMonitor already reports the
+    // destination, not the monitor you were actually looking at when you
+    // triggered the move. Track focus changes ourselves so we always have
+    // the monitor that was focused *immediately before* the latest change,
+    // one step behind the live value.
+    property string _lastFocusedName: Hyprland.focusedMonitor?.name ?? ""
+    property string _previousFocusedName: _lastFocusedName
+    Connections {
+        target: Hyprland
+        function onFocusedMonitorChanged() {
+            wsRoot._previousFocusedName = wsRoot._lastFocusedName
+            wsRoot._lastFocusedName = Hyprland.focusedMonitor?.name ?? ""
+        }
+    }
+
+    // A workspace being pushed/pulled is user-initiated — like the shake
+    // effects — so it only plays on whichever bar you're actually looking
+    // at, per Config.interactiveEffectMonitorMode, not on every monitor.
+    readonly property bool isFocusedScreen: Config.interactiveEffectMonitorMode !== "focused"
+        || monitor?.name === _previousFocusedName
+    onWorkspaceMonitorByIdChanged: {
+        if (_prevWorkspaceMonitorById === null) {
+            _prevWorkspaceMonitorById = workspaceMonitorById
+            return
+        }
+        var anyChanged = false
+        for (var idStr in workspaceMonitorById) {
+            // A workspace being freshly created (first-ever focus on an
+            // unvisited number, or recreated after being destroyed while
+            // empty/unfocused — Hyprland drops non-persistent workspaces
+            // with no windows) briefly has no monitor at all before
+            // settling on the current one. That reads in this diff as a
+            // "" -> "realmonitor" transition, indistinguishable from an
+            // actual relocation unless both sides are required to already
+            // be real, non-empty monitor names.
+            if (_prevWorkspaceMonitorById[idStr] !== undefined
+                && _prevWorkspaceMonitorById[idStr] !== ""
+                && workspaceMonitorById[idStr] !== ""
+                && _prevWorkspaceMonitorById[idStr] !== workspaceMonitorById[idStr]) {
+                anyChanged = true
+                if (isFocusedScreen && !Config.reduceMotion) {
+                    var idx = wsIndexForId(parseInt(idStr))
+                    var cell = idx >= 0 ? wsRepeater.itemAt(idx) : null
+                    if (cell) cell.playMoveCue()
+                }
+            }
+        }
+        // Quickshell's Hyprland IPC listener doesn't refresh
+        // monitor.activeWorkspace on this event class on its own — without
+        // this, both bars keep showing whichever workspace was active
+        // before the move until some unrelated event (e.g. switching
+        // workspaces once) happens to force a resync.
+        if (anyChanged) {
+            Hyprland.refreshMonitors()
+            Hyprland.refreshWorkspaces()
+        }
+        _prevWorkspaceMonitorById = workspaceMonitorById
     }
 
     // Scroll to move focus to the previous/next configured workspace, wrapping
@@ -189,6 +272,30 @@ Item {
                 // against it — too much motion for a status bar, the blip
                 // plus the static border/colour was already the right call.
                 onUrgentChanged: if (urgent) wsIconBlip.trigger()
+
+                // Pushed/pulled to another monitor: the icon leaves to one
+                // side and re-enters from the other, in place, on this same
+                // cell — not a real cross-window hand-off (every bar always
+                // shows every configured workspace regardless of which
+                // monitor it's actually attached to), just a self-contained
+                // "this one just relocated" cue.
+                property real moveOffset: 0
+                property real moveOpacity: 1
+                transform: [Translate { x: wsCell.moveOffset }]
+                opacity: wsCell.moveOpacity
+                function playMoveCue() { moveCue.restart() }
+                SequentialAnimation {
+                    id: moveCue
+                    ParallelAnimation {
+                        NumberAnimation { target: wsCell; property: "moveOffset"; to: 28; duration: 150; easing.type: Easing.InCubic }
+                        NumberAnimation { target: wsCell; property: "moveOpacity"; to: 0; duration: 150; easing.type: Easing.InCubic }
+                    }
+                    PropertyAction { target: wsCell; property: "moveOffset"; value: -28 }
+                    ParallelAnimation {
+                        NumberAnimation { target: wsCell; property: "moveOffset"; to: 0; duration: 200; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: wsCell; property: "moveOpacity"; to: 1; duration: 200; easing.type: Easing.OutCubic }
+                    }
+                }
 
                 // Vertical overlap between this cell's slot and the
                 // indicator, as a 0–1 fraction — a plain binding, not an

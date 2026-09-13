@@ -91,6 +91,12 @@ Singleton {
     // at the moment the OSD was triggered, not re-evaluated live — an OSD
     // shouldn't jump screens mid-display any more than a toast should.
     property string osdMonitorMode: "focused"
+    // Same "all"/"focused" choice again, for IconShake-class effects only
+    // (mute/mic-mute/DND toggles, workspace push/pull) — effects reserved
+    // for something you directly triggered, as opposed to IconBlip's
+    // state-changes-with-no-clear-origin, which always play on every
+    // monitor since there's no "correct" screen to single out for those.
+    property string interactiveEffectMonitorMode: "focused"
     property string fontFamily: "Noto Nerd Font"
 
     // "state": icons rest at `subtle`, only take on their accent hue when they

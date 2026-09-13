@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 import QtQuick
@@ -23,7 +24,13 @@ BarCell {
 
     PwObjectTracker { objects: [volBlock.sink] }
 
-    onMutedChanged: iconShake.trigger()
+    // Mute is a shared Pipewire property, so every monitor's bar observes
+    // this change simultaneously regardless of which one (if any) you
+    // actually toggled it from — gate the shake to the monitor you're
+    // looking at, per Config.interactiveEffectMonitorMode.
+    readonly property bool isFocusedScreen: Config.interactiveEffectMonitorMode !== "focused"
+        || Hyprland.monitorFor(volBlock.screen)?.name === Hyprland.focusedMonitor?.name
+    onMutedChanged: if (isFocusedScreen) iconShake.trigger()
     IconShake { id: iconShake }
 
     Text {

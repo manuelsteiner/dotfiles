@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Services.Notifications
 import QtQuick
 import QtQuick.Layouts
@@ -27,13 +28,19 @@ BarCell {
     // passive (something arrived) — pop the badge instead, and only on the
     // way up, not when notifications are cleared/dismissed.
     property int _lastCount: root.storedNotifications.length
+    // DND is a shell-global toggle observed identically by every monitor's
+    // bar, regardless of which one (if any) you actually clicked — gate the
+    // shake to the monitor you're looking at, per
+    // Config.interactiveEffectMonitorMode, same as the mute shakes.
+    readonly property bool isFocusedScreen: Config.interactiveEffectMonitorMode !== "focused"
+        || Hyprland.monitorFor(bellBlock.screen)?.name === Hyprland.focusedMonitor?.name
     Connections {
         target: root
         function onStoredNotificationsChanged() {
             if (root.storedNotifications.length > bellBlock._lastCount) badgeBlip.trigger()
             bellBlock._lastCount = root.storedNotifications.length
         }
-        function onDndEnabledChanged() { iconShake.trigger() }
+        function onDndEnabledChanged() { if (bellBlock.isFocusedScreen) iconShake.trigger() }
     }
     IconShake { id: iconShake }
     IconBlip { id: badgeBlip; target: badgeRect }
