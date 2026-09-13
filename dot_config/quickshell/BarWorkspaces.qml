@@ -77,6 +77,17 @@ Item {
     // Right-click a workspace to pull/push it to whichever other monitor
     // it isn't currently on. With exactly two monitors this is a clean
     // toggle; with more than two it moves to the first other one found.
+    //
+    // _selfInitiatedMove flags that *this* wsRoot (i.e. whichever bar's
+    // MouseArea just received the click) is the one to play the move-cue
+    // on — a hard fact, not a guess. Pulling a workspace TO this monitor
+    // means it wasn't active here yet, and clicking this bar's layer-shell
+    // surface doesn't necessarily warp Hyprland's window-manager focus the
+    // way clicking a real window does, so the generic
+    // Hyprland.focusedMonitor-based heuristic below (needed for the
+    // keybind path, which has no click to be certain about) could still
+    // be reporting the *source* monitor as "focused" at click-time —
+    // exactly backwards for a pull.
     function moveToOtherMonitor(index) {
         if (index < 0 || index >= Config.workspaces.length) return
         var wsId = Config.workspaces[index].ws
@@ -84,6 +95,8 @@ Item {
         if (!ws || !ws.monitor) return
         var other = Hyprland.monitors.values.find(m => m.name !== ws.monitor.name)
         if (!other) return
+        wsRoot._selfInitiatedMove = true
+        _selfInitiatedMoveExpiry.restart()
         // This Hyprland config is Lua-based: Hyprland.dispatch() splices its
         // string into `hl.dispatch(...)`, which needs an hl.dsp.* call, not
         // the classic "moveworkspacetomonitor <ws> <mon>" dispatch string
@@ -92,6 +105,18 @@ Item {
         Hyprland.dispatch('hl.dsp.workspace.move({ workspace = ' + wsId + ', monitor = "' + other.name + '" })')
         if (Config.workspaceMoveFollowsFocus)
             Hyprland.dispatch('hl.dsp.focus({ workspace = ' + wsId + ' })')
+    }
+    property bool _selfInitiatedMove: false
+    // A pull swaps *two* workspaces (the one you clicked and whatever was
+    // already active on the destination), which shows up as two separate
+    // reactive diff cycles below, not one — clearing the flag right after
+    // the first cycle's "anyChanged" discarded it before the second,
+    // relevant cycle ever saw it. A short expiry window instead of an
+    // immediate clear covers the whole cascade from one click.
+    Timer {
+        id: _selfInitiatedMoveExpiry
+        interval: 400
+        onTriggered: wsRoot._selfInitiatedMove = false
     }
 
     // Detects a workspace's monitor actually changing, from *any* trigger —
@@ -151,7 +176,7 @@ Item {
                 && workspaceMonitorById[idStr] !== ""
                 && _prevWorkspaceMonitorById[idStr] !== workspaceMonitorById[idStr]) {
                 anyChanged = true
-                if (isFocusedScreen && !Config.reduceMotion) {
+                if ((_selfInitiatedMove || isFocusedScreen) && !Config.reduceMotion) {
                     var idx = wsIndexForId(parseInt(idStr))
                     var cell = idx >= 0 ? wsRepeater.itemAt(idx) : null
                     if (cell) cell.playMoveCue()
