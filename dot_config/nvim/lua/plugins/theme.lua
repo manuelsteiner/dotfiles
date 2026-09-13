@@ -41,6 +41,18 @@ local function apply_oled_ui()
     local selection = active_theme.highlight_med or "#353539"
     local selection_foreground = resolved_highlight("Normal").fg
 
+    local lazy_progress_done = resolved_highlight("Constant")
+    lazy_progress_done.default = nil
+    lazy_progress_done.link = nil
+    lazy_progress_done.bg = surface
+    vim.api.nvim_set_hl(0, "LazyProgressDone", lazy_progress_done)
+
+    local lazy_progress_todo = resolved_highlight("LineNr")
+    lazy_progress_todo.default = nil
+    lazy_progress_todo.link = nil
+    lazy_progress_todo.bg = surface
+    vim.api.nvim_set_hl(0, "LazyProgressTodo", lazy_progress_todo)
+
     set_background({
         "NormalFloat", "Float", "NvimFloat", "FloatBorder", "FloatTitle", "FloatFooter",
         "Pmenu", "PmenuKind", "PmenuExtra",
