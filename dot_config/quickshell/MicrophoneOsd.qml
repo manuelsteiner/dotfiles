@@ -10,6 +10,7 @@ Scope {
             property var modelData
             screen: modelData
             visible: root.micOsdVisible
+                && (Config.osdMonitorMode !== "focused" || modelData.name === root.micOsdScreen)
             WlrLayershell.namespace: "qs-mic-osd"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore

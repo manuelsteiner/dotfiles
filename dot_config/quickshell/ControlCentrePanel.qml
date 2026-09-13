@@ -34,9 +34,14 @@ Scope {
             property int activeTab: 0 // 0 notifications, 1 audio, 2 media, 3 network, 4 themes
             property int networkSubTab: 0 // 0 ethernet, 1 wifi, 2 bluetooth
 
+            // Pipewire.nodes has no `count` property at all (UntypedObjectModel
+            // only exposes `values`) — `.count` silently evaluated to
+            // undefined, so this loop never ran and audioSourceCount was
+            // always 0, meaning the "No devices" empty state showed even
+            // with real input devices connected.
             readonly property int audioSourceCount: {
                 var c = 0
-                for (var i = 0; i < Pipewire.nodes.count; i++) {
+                for (var i = 0; i < Pipewire.nodes.values.length; i++) {
                     var n = Pipewire.nodes.values[i]
                     if (!n.isSink && !n.isStream && n.audio) c++
                 }
@@ -849,7 +854,7 @@ Scope {
                                             height: 28
                                             radius: Config.radiusCell
                                             color: themeRow.isCurrent
-                                                ? (themeMA.containsMouse ? Theme.press : Theme.elev2)
+                                                ? (themeMA.containsMouse ? Theme.elev2Hover : Theme.elev2)
                                                 : (themeMA.containsMouse ? Theme.hover : "transparent")
                                             border.width: themeRow.isCurrent ? 1 : 0
                                             border.color: Theme.accent
@@ -912,7 +917,7 @@ Scope {
         // treatment, a different semantic axis (this is a toggle's current
         // state, not a resting button surface).
         color: qa.active
-            ? (qaMA.containsMouse ? Theme.press : Theme.elev2)
+            ? (qaMA.containsMouse ? Theme.elev2Hover : Theme.elev2)
             : (qaMA.containsMouse ? Theme.controlHover : Theme.controlRest)
         border.width: 1
         // edgeStrong, not edge: edge's contrast is calibrated against bare
@@ -947,7 +952,7 @@ Scope {
             anchors.fill: parent
             radius: Config.radiusCell
             color: tab.selected
-                ? (tabMA.containsMouse ? Theme.press : Theme.elev2)
+                ? (tabMA.containsMouse ? Theme.elev2Hover : Theme.elev2)
                 : (tabMA.containsMouse ? Theme.hover : "transparent")
             border.width: tab.selected ? 1 : 0
             border.color: Theme.accent
@@ -980,7 +985,7 @@ Scope {
             anchors.fill: parent
             radius: Config.radiusCell
             color: subTab.selected
-                ? (subTabMA.containsMouse ? Theme.press : Theme.elev2)
+                ? (subTabMA.containsMouse ? Theme.elev2Hover : Theme.elev2)
                 : (subTabMA.containsMouse ? Theme.hover : "transparent")
             border.width: subTab.selected ? 1 : 0
             border.color: Theme.accent
@@ -1014,7 +1019,7 @@ Scope {
         // See QuickAction above for why "off" rest uses controlRest instead
         // of transparent, and edgeStrong instead of edge.
         color: chip.on
-            ? (chipMA.containsMouse ? Theme.press : Theme.elev2)
+            ? (chipMA.containsMouse ? Theme.elev2Hover : Theme.elev2)
             : (chipMA.containsMouse ? Theme.controlHover : Theme.controlRest)
         border.width: 1
         border.color: chip.on ? Theme.accent : Theme.edgeStrong
@@ -1042,7 +1047,7 @@ Scope {
         implicitHeight: visible ? rowCol.implicitHeight + 12 : 0
         radius: Config.radiusCell
         color: isDefault
-            ? (audioMA.containsMouse ? Theme.press : Theme.elev2)
+            ? (audioMA.containsMouse ? Theme.elev2Hover : Theme.elev2)
             : (audioMA.containsMouse ? Theme.hover : "transparent")
         border.width: isDefault ? 1 : 0
         border.color: audioRow.accentColor
@@ -1139,7 +1144,7 @@ Scope {
             height: 32
             radius: Config.radiusCell
             color: netRow.connected
-                ? (netMA.containsMouse ? Theme.press : Theme.elev2)
+                ? (netMA.containsMouse ? Theme.elev2Hover : Theme.elev2)
                 : (netMA.containsMouse ? Theme.hover : "transparent")
             border.width: netRow.connected ? 1 : 0
             border.color: netRow.accentColor
@@ -1207,7 +1212,7 @@ Scope {
         radius: implicitWidth / 2
         opacity: btn.enabled ? 1 : 0.35
         color: btn.active
-            ? (btnMA.containsMouse ? Theme.press : Theme.elev2)
+            ? (btnMA.containsMouse ? Theme.elev2Hover : Theme.elev2)
             : (btnMA.containsMouse ? Theme.hover : "transparent")
         border.width: btn.active ? 1 : 0
         border.color: Theme.accent

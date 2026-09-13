@@ -362,6 +362,13 @@ Singleton {
     // border whose *outside* is a card, not base: buttons, chips, rows,
     // input fields inside a popout.
     readonly property color edgeStrong: Qt.tint(base, _ink(0.28))
+    // An already-elev2 row/card brightening on hover (e.g. a connected
+    // device row) needs an opaque result too — animating a Behavior on
+    // color from opaque elev2 to translucent `press` interpolates the alpha
+    // channel along with it, so partway through the 80ms transition the row
+    // genuinely goes semi-transparent and flickers. Pre-composited here
+    // instead of animating into translucency.
+    readonly property color elev2Hover: Qt.tint(elev2, _ink(0.16))
 
     // Translucent — composited over whatever they sit on.
     readonly property color edgeTop: _ink(0.07)   // 1px inner highlight, top edge of popouts

@@ -24,6 +24,7 @@ ShellRoot {
     property bool volOsdMuted: false
     property bool volOsdVisible: false
     property bool _suppressVolumeOsd: false
+    property string volOsdScreen: ""
 
     Connections {
         target: Config.enableVolumeOsd ? (Pipewire.defaultAudioSink?.audio ?? null) : null
@@ -37,6 +38,7 @@ ShellRoot {
         if (!sink || !sink.audio) return
         root.volOsdValue = sink.audio.volume
         root.volOsdMuted = sink.audio.muted
+        root.volOsdScreen = Hyprland.focusedMonitor?.name ?? ""
         root.micOsdVisible = false
         root.volOsdVisible = true
         volOsdHideTimer.restart()
@@ -68,6 +70,7 @@ ShellRoot {
     property bool micOsdMuted: false
     property bool micOsdVisible: false
     property bool _suppressMicOsd: false
+    property string micOsdScreen: ""
 
     Connections {
         target: Config.enableMicrophoneOsd ? (Pipewire.defaultAudioSource?.audio ?? null) : null
@@ -81,6 +84,7 @@ ShellRoot {
         if (!source || !source.audio) return
         root.micOsdValue = source.audio.volume
         root.micOsdMuted = source.audio.muted
+        root.micOsdScreen = Hyprland.focusedMonitor?.name ?? ""
         root.volOsdVisible = false
         root.micOsdVisible = true
         micOsdHideTimer.restart()
@@ -111,6 +115,7 @@ ShellRoot {
     property real brightOsdValue: 0
     property bool brightOsdVisible: false
     property bool _brightInitialized: false
+    property string brightOsdScreen: ""
 
     Timer {
         id: brightOsdHideTimer

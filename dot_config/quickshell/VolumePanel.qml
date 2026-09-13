@@ -24,7 +24,7 @@ Scope {
                 id: sinkTracker
                 objects: {
                     var result = []
-                    for (var i = 0; i < Pipewire.nodes.count; i++)
+                    for (var i = 0; i < Pipewire.nodes.values.length; i++)
                         result.push(Pipewire.nodes.values[i])
                     return result
                 }
@@ -33,10 +33,16 @@ Scope {
             // D-9 keyboard traversal. Default sink first, then the rest —
             // matches the two-Repeater display order below. A plain array of
             // QObjects used only for index arithmetic, never as a model.
+            // UntypedObjectModel (Pipewire.nodes' actual type) only exposes
+            // `values` — it has no `count` property at all (that's a
+            // Repeater/ListView's own attached property, not the model's),
+            // so `Pipewire.nodes.count` silently evaluated to undefined and
+            // this loop never ran a single iteration. Confirmed via a
+            // debug log before landing this fix, not just inspection.
             readonly property var sinkNodes: {
                 var def = []
                 var others = []
-                for (var i = 0; i < Pipewire.nodes.count; i++) {
+                for (var i = 0; i < Pipewire.nodes.values.length; i++) {
                     var n = Pipewire.nodes.values[i]
                     if (!n.isSink || n.isStream) continue
                     if (n === Pipewire.defaultAudioSink) def.push(n)
@@ -161,7 +167,7 @@ Scope {
         implicitHeight: visible ? col.height + 16 : 0
         radius: Config.radiusCell
         color: isDefault
-            ? (isFocused ? Theme.press : Theme.elev2)
+            ? (isFocused ? Theme.elev2Hover : Theme.elev2)
             : (isFocused ? Theme.hover : "transparent")
         border.color: isDefault ? Theme.volumeColor : "transparent"
         border.width: isDefault ? 1 : 0

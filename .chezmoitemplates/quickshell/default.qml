@@ -83,6 +83,11 @@ Singleton {
     property real edgeAlpha: 0.18
 
     property string osdPosition: "top"
+    // Same "all"/"focused" choice as toastMonitorMode, applied to the
+    // volume/mic/brightness OSDs. Pinned to whichever monitor was focused
+    // at the moment the OSD was triggered, not re-evaluated live — an OSD
+    // shouldn't jump screens mid-display any more than a toast should.
+    property string osdMonitorMode: "focused"
     property string fontFamily: "NotoSans Nerd Font"
 
     // "state": icons rest at `subtle`, only take on their accent hue when they

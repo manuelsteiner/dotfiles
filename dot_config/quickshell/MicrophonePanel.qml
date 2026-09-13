@@ -24,17 +24,19 @@ Scope {
                 id: sourceTracker
                 objects: {
                     var result = []
-                    for (var i = 0; i < Pipewire.nodes.count; i++)
+                    for (var i = 0; i < Pipewire.nodes.values.length; i++)
                         result.push(Pipewire.nodes.values[i])
                     return result
                 }
             }
 
-            // D-9 keyboard traversal — see VolumePanel.qml's identical pattern.
+            // D-9 keyboard traversal — see VolumePanel.qml's identical
+            // pattern, and its comment on why `.values.length`, not `.count`
+            // (Pipewire.nodes has no `count` property at all).
             readonly property var sourceNodes: {
                 var def = []
                 var others = []
-                for (var i = 0; i < Pipewire.nodes.count; i++) {
+                for (var i = 0; i < Pipewire.nodes.values.length; i++) {
                     var n = Pipewire.nodes.values[i]
                     if (n.isSink || n.isStream || !n.audio) continue
                     if (n === Pipewire.defaultAudioSource) def.push(n)
@@ -156,7 +158,7 @@ Scope {
         implicitHeight: visible ? col.height + 16 : 0
         radius: Config.radiusCell
         color: isDefault
-            ? (isFocused ? Theme.press : Theme.elev2)
+            ? (isFocused ? Theme.elev2Hover : Theme.elev2)
             : (isFocused ? Theme.hover : "transparent")
         border.color: isDefault ? Theme.microphoneColor : "transparent"
         border.width: isDefault ? 1 : 0

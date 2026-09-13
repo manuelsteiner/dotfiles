@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
@@ -23,6 +24,7 @@ Scope {
                     if (!isNaN(pct)) {
                         root.brightOsdValue = pct / 100.0
                         if (root._osdReady && root._brightInitialized) {
+                            root.brightOsdScreen = Hyprland.focusedMonitor?.name ?? ""
                             root.brightOsdVisible = true
                             brightOsdHideTimer.restart()
                         }
@@ -54,6 +56,7 @@ Scope {
             property var modelData
             screen: modelData
             visible: root.brightOsdVisible
+                && (Config.osdMonitorMode !== "focused" || modelData.name === root.brightOsdScreen)
             WlrLayershell.namespace: "qs-bright-osd"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore

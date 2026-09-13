@@ -10,6 +10,7 @@ Scope {
             property var modelData
             screen: modelData
             visible: root.volOsdVisible
+                && (Config.osdMonitorMode !== "focused" || modelData.name === root.volOsdScreen)
             WlrLayershell.namespace: "qs-vol-osd"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
