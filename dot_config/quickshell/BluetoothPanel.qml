@@ -256,7 +256,14 @@ Scope {
                             anchors.verticalCenter: parent.verticalCenter
                             width: powerRow.implicitWidth + 12
                             height: 22; radius: 6
-                            color: powerMA.containsMouse ? Theme.hover : Theme.elev2
+                            // Was a flat Theme.elev2 fill — identical to the
+                            // card behind it, so invisible at rest. Recessed/
+                            // level/raised + edgeStrong border, same as every
+                            // other button on a card.
+                            color: powerMA.pressed ? Theme.controlPress
+                                : powerMA.containsMouse ? Theme.controlHover : Theme.controlRest
+                            border.width: 1
+                            border.color: Theme.edgeStrong
                             Behavior on color { ColorAnimation { duration: 80 } }
 
                             Row {

@@ -267,32 +267,36 @@ Scope {
                                 Layout.fillWidth: true
                                 Layout.topMargin: 4
                                 spacing: 6
+                                // Right-aligned, not stretched: equal
+                                // full-width buttons imply equal weight and
+                                // turn a mostly-ignored control into the
+                                // toast's biggest hit target. Buttons size to
+                                // their label instead.
+                                Item { Layout.fillWidth: true }
                                 Repeater {
                                     model: parent.visibleActions
                                     delegate: Rectangle {
                                         required property var modelData
-                                        Layout.fillWidth: true
-                                        height: 26; radius: Config.radiusCell
-                                        // Same hairline-outline + hover/press-fill
-                                        // language as every other button in the
-                                        // shell (QuickAction, CcToggleChip, …) —
-                                        // this was a flat, borderless surface,
-                                        // the odd one out. No shadow of its own:
-                                        // the halo lives on the popout/card
-                                        // chrome as a whole, not on every button
-                                        // inside it, matching that convention.
-                                        // A literal-transparent rest fill left
-                                        // the border nearly invisible here —
-                                        // edge and elev2 (the card behind it)
-                                        // are too close in tone for a 1px
-                                        // outline alone to read as a button, so
-                                        // it keeps a faint fill at rest too.
-                                        color: actionArea.pressed ? Theme.press
-                                            : actionArea.containsMouse ? Theme.hover : Theme.divider
+                                        implicitWidth: btnLabel.implicitWidth + 24
+                                        height: 28; radius: Config.radiusCell
+                                        // Recessed → level → raised against the
+                                        // card's own elev2 ink (0.05/0.10/0.16),
+                                        // never outranking the card it sits on
+                                        // — and edgeStrong instead of edge,
+                                        // since edge's contrast is calibrated
+                                        // against bare `base`, not a card
+                                        // (halved effective contrast otherwise,
+                                        // which is why a plain-edge border here
+                                        // read as barely-there). No shadow of
+                                        // its own: the halo belongs to the
+                                        // toast as a whole.
+                                        color: actionArea.pressed ? Theme.controlPress
+                                            : actionArea.containsMouse ? Theme.controlHover : Theme.controlRest
                                         border.width: 1
-                                        border.color: Theme.edge
+                                        border.color: Theme.edgeStrong
                                         Behavior on color { ColorAnimation { duration: 80 } }
                                         Text {
+                                            id: btnLabel
                                             anchors.centerIn: parent
                                             text: modelData.text ?? ""
                                             font { family: Config.fontFamily; pixelSize: 11 }

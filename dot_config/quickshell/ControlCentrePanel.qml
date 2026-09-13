@@ -904,11 +904,21 @@ Scope {
         Layout.fillWidth: true
         height: 30
         radius: Config.radiusCell
+        // Inactive rest uses the same recessed/level/raised progression as
+        // the toast/notification-centre action buttons (controlRest/Hover),
+        // not literal transparent — a button sitting on a card needs its own
+        // fill to read at a glance, per the same finding that motivated
+        // those. Active keeps the existing elev2+accent "notable state"
+        // treatment, a different semantic axis (this is a toggle's current
+        // state, not a resting button surface).
         color: qa.active
             ? (qaMA.containsMouse ? Theme.press : Theme.elev2)
-            : (qaMA.containsMouse ? Theme.hover : "transparent")
+            : (qaMA.containsMouse ? Theme.controlHover : Theme.controlRest)
         border.width: 1
-        border.color: qa.active ? Theme.accent : Theme.edge
+        // edgeStrong, not edge: edge's contrast is calibrated against bare
+        // `base`, and this sits on an elev2 card — see edgeStrong's own
+        // comment in theme-set.
+        border.color: qa.active ? Theme.accent : Theme.edgeStrong
 
         ColumnLayout {
             anchors.centerIn: parent
@@ -1001,11 +1011,13 @@ Scope {
         width: chipText.implicitWidth + 16
         height: 20
         radius: 10
+        // See QuickAction above for why "off" rest uses controlRest instead
+        // of transparent, and edgeStrong instead of edge.
         color: chip.on
             ? (chipMA.containsMouse ? Theme.press : Theme.elev2)
-            : (chipMA.containsMouse ? Theme.hover : "transparent")
+            : (chipMA.containsMouse ? Theme.controlHover : Theme.controlRest)
         border.width: 1
-        border.color: chip.on ? Theme.accent : Theme.edge
+        border.color: chip.on ? Theme.accent : Theme.edgeStrong
         Text {
             id: chipText
             anchors.centerIn: parent

@@ -117,9 +117,14 @@ return {
 }
 EOF
 
-    local elev2_hex edge_hex
+    local elev2_hex edge_hex edge_strong_hex
     elev2_hex="$(blend "$base" "$text" "$hyprlock_elev2_alpha")"
     edge_hex="$(blend "$base" "$text" 0.18)"
+    # The input field's border sits on the scrim-darkened wallpaper behind
+    # it, not on bare base — same under-specified-contrast issue as `edge`
+    # on a card in the shell (see the toast-action-button patch), so it
+    # wants the same edgeStrong ink.
+    edge_strong_hex="$(blend "$base" "$text" 0.28)"
 
     cat > "$output/hyprlock.conf" <<EOF
 \$base = 0xff$(hex "$base")
@@ -131,6 +136,7 @@ EOF
 \$accent = 0xff$(hex "${!preferred_accent}")
 \$elev2 = rgba(${elev2_hex}ff)
 \$edge = rgba(${edge_hex}ff)
+\$edgeStrong = rgba(${edge_strong_hex}ff)
 \$scrim = rgba(00000080)
 EOF
 
@@ -347,13 +353,31 @@ Singleton {
     // Opaque — composited over the palette's own base.
     readonly property color elev1:   Qt.tint(base, _ink($elev1_alpha))   // bar islands
     readonly property color elev2:   Qt.tint(base, _ink($elev2_alpha))   // popouts, toasts, OSD, menus
-    readonly property color edge:    Qt.tint(base, _ink(Config.edgeAlpha))   // the 1px border on everything
+    readonly property color edge:    Qt.tint(base, _ink(Config.edgeAlpha))   // the 1px border on everything: islands, popouts, OSDs, toasts (outside is base)
+    // `edge`'s ink is calibrated against bare `base` (0 ink). A border that
+    // instead sits on an elev1/elev2 card only nets edge-minus-card of
+    // contrast (0.18-0.10 = 0.08 against elev2 — half the intended
+    // delta, which is why it read as barely-there). edgeStrong restores the
+    // same ~0.18 effective delta against a card. Use this for any 1px
+    // border whose *outside* is a card, not base: buttons, chips, rows,
+    // input fields inside a popout.
+    readonly property color edgeStrong: Qt.tint(base, _ink(0.28))
 
     // Translucent — composited over whatever they sit on.
     readonly property color edgeTop: _ink(0.07)   // 1px inner highlight, top edge of popouts
     readonly property color hover:   _ink(0.10)   // hover fill on cells and rows
     readonly property color press:   _ink(0.16)   // press fill
     readonly property color divider: _ink(0.10)   // rules inside popouts, slider tracks
+
+    // Fill for a control that sits *on* a card (buttons, chips), as a
+    // recessed → level → raised progression relative to the card's own
+    // elev2 ink (0.10) — rest reads as a well, never outranking the card;
+    // hover/press are the same values as `hover`/`press` above, named
+    // separately so callers say what they mean (a control's own fill vs. a
+    // hover highlight on an otherwise-bare row).
+    readonly property color controlRest:  _ink(0.05)   // below the card — recessed
+    readonly property color controlHover: _ink(0.10)   // level with the card
+    readonly property color controlPress: _ink(0.16)   // above the card
 }
 EOF
 }

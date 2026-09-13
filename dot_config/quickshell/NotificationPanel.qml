@@ -151,9 +151,18 @@ Scope {
 
                         Rectangle {
                             visible: root.storedNotifications.length > 0
-                            width: clearRow.implicitWidth + 12
-                            height: 22; radius: Config.radiusCell
-                            color: clearAllMA.containsMouse ? Theme.hover : "transparent"
+                            width: clearRow.implicitWidth + 16
+                            height: 24; radius: Config.radiusCell
+                            // Recessed/level/raised fill + edgeStrong border,
+                            // same as the toast/notification action buttons
+                            // — this already read as a button (it had a
+                            // hover box) but had no border, so it went from
+                            // fully invisible to fully lit with nothing in
+                            // between.
+                            color: clearAllMA.pressed ? Theme.controlPress
+                                : clearAllMA.containsMouse ? Theme.controlHover : Theme.controlRest
+                            border.width: 1
+                            border.color: Theme.edgeStrong
                             Behavior on color { ColorAnimation { duration: 80 } }
 
                             RowLayout {
@@ -419,32 +428,29 @@ Scope {
 
                                     // See NotificationToasts.qml for why
                                     // empty-label actions are filtered rather
-                                    // than rendered as a blank pill.
+                                    // than rendered as a blank pill, and for
+                                    // the recessed-fill / edgeStrong reasoning
+                                    // below.
                                     RowLayout {
                                         readonly property var visibleActions: (groupDelegate.primary.actions ?? []).filter(a => (a.text ?? "") !== "")
                                         visible: visibleActions.length > 0
                                         Layout.fillWidth: true
                                         Layout.topMargin: 2
                                         spacing: 6
+                                        Item { Layout.fillWidth: true }
                                         Repeater {
                                             model: parent.visibleActions
                                             delegate: Rectangle {
                                                 required property var modelData
-                                                Layout.fillWidth: true
-                                                height: 24; radius: Config.radiusCell
-                                                // Hairline-outline + hover/press-fill,
-                                                // matching every other button in the
-                                                // shell — see NotificationToasts.qml
-                                                // for why the rest state keeps a
-                                                // faint fill instead of literal
-                                                // transparent (edge vs. elev2
-                                                // contrast is too low otherwise).
-                                                color: actionHover.pressed ? Theme.press
-                                                    : actionHover.containsMouse ? Theme.hover : Theme.divider
+                                                implicitWidth: btnLabel.implicitWidth + 24
+                                                height: 28; radius: Config.radiusCell
+                                                color: actionHover.pressed ? Theme.controlPress
+                                                    : actionHover.containsMouse ? Theme.controlHover : Theme.controlRest
                                                 border.width: 1
-                                                border.color: Theme.edge
+                                                border.color: Theme.edgeStrong
                                                 Behavior on color { ColorAnimation { duration: 80 } }
                                                 Text {
+                                                    id: btnLabel
                                                     anchors.centerIn: parent
                                                     text: modelData.text ?? ""
                                                     font { family: Config.fontFamily; pixelSize: 11 }
