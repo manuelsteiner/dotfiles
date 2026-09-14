@@ -133,14 +133,18 @@ Scope {
                             id: toastContent
                             anchors.fill: parent
                             anchors.margins: 12
-                            spacing: 4
+                            spacing: 6
 
+                            // Header spans the full card width regardless of
+                            // whether a big image is present below it — app
+                            // identity reads top-left, consistently, rather
+                            // than shifting position depending on content.
                             RowLayout {
                                 Layout.fillWidth: true
                                 spacing: 8
                                 Image {
-                                    visible: (toastCard.modelData?.resolvedIcon ?? "") !== ""
-                                    source: toastCard.modelData?.resolvedIcon ?? ""
+                                    visible: (toastCard.modelData?.smallIcon ?? "") !== ""
+                                    source: toastCard.modelData?.smallIcon ?? ""
                                     Layout.preferredWidth: 16
                                     Layout.preferredHeight: 16
                                     sourceSize.width: 16
@@ -233,85 +237,129 @@ Scope {
                                 }
                             }
 
-                            Text {
-                                visible: (toastCard.modelData?.summary ?? "") !== ""
-                                text: toastCard.modelData?.summary ?? ""
-                                font { family: Config.fontFamily; pixelSize: 13; bold: true }
-                                color: Theme.text
-                                Layout.fillWidth: true
-                                wrapMode: Text.WordWrap
-                                maximumLineCount: 2
-                                elide: Text.ElideRight
-                            }
-
-                            Text {
-                                visible: (toastCard.modelData?.body ?? "") !== ""
-                                text: toastCard.modelData?.body ?? ""
-                                font { family: Config.fontFamily; pixelSize: 12 }
-                                color: Theme.subtle
-                                Layout.fillWidth: true
-                                wrapMode: Text.WordWrap
-                                maximumLineCount: 3
-                                elide: Text.ElideRight
-                            }
-
-                            // Some senders (Claude Code among them) include
-                            // an action with an empty label — probably a
-                            // default/icon-only action their client expects
-                            // its OWN UI to render specially, not something
-                            // meant to show as a blank pill here. Filtered
-                            // out rather than rendered empty.
+                            // Content row: a real notification-specific
+                            // picture (album art, a contact photo, a
+                            // screenshot preview — the image-data/image-path
+                            // hint) gets its own larger thumbnail beside the
+                            // text rather than being squeezed into the small
+                            // header badge above. A flat photo edge-to-edge
+                            // against the card read as bare, so it gets the
+                            // same elev1-fill + edgeStrong-border treatment
+                            // other elevated surfaces in the shell use.
                             RowLayout {
-                                readonly property var visibleActions: (toastCard.modelData?.actions ?? []).filter(a => (a.text ?? "") !== "")
-                                visible: visibleActions.length > 0
                                 Layout.fillWidth: true
-                                Layout.topMargin: 4
-                                spacing: 6
-                                // Right-aligned, not stretched: equal
-                                // full-width buttons imply equal weight and
-                                // turn a mostly-ignored control into the
-                                // toast's biggest hit target. Buttons size to
-                                // their label instead.
-                                Item { Layout.fillWidth: true }
-                                Repeater {
-                                    model: parent.visibleActions
-                                    delegate: Rectangle {
-                                        required property var modelData
-                                        implicitWidth: btnLabel.implicitWidth + 24
-                                        height: 28; radius: Config.radiusCell
-                                        // Recessed → level → raised against the
-                                        // card's own elev2 ink (0.05/0.10/0.16),
-                                        // never outranking the card it sits on
-                                        // — and edgeStrong instead of edge,
-                                        // since edge's contrast is calibrated
-                                        // against bare `base`, not a card
-                                        // (halved effective contrast otherwise,
-                                        // which is why a plain-edge border here
-                                        // read as barely-there). No shadow of
-                                        // its own: the halo belongs to the
-                                        // toast as a whole.
-                                        color: actionArea.pressed ? Theme.controlPress
-                                            : actionArea.containsMouse ? Theme.controlHover : Theme.controlRest
-                                        border.width: 1
-                                        border.color: Theme.edgeStrong
-                                        Behavior on color { ColorAnimation { duration: 80 } }
-                                        Text {
-                                            id: btnLabel
-                                            anchors.centerIn: parent
-                                            text: modelData.text ?? ""
-                                            font { family: Config.fontFamily; pixelSize: 11 }
-                                            color: actionArea.containsMouse ? Theme.text : Theme.subtle
-                                        }
-                                        MouseArea {
-                                            id: actionArea
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            onClicked: modelData.invoke()
+                                spacing: 10
+
+                                Rectangle {
+                                    id: bigImageFrame
+                                    visible: (toastCard.modelData?.bigImage ?? "") !== ""
+                                    Layout.preferredWidth: 48
+                                    Layout.preferredHeight: 48
+                                    Layout.alignment: Qt.AlignTop
+                                    radius: Config.radiusCell
+                                    color: Theme.elev1
+                                    border.width: 1
+                                    border.color: Theme.edgeStrong
+                                    clip: true
+                                    Image {
+                                        anchors.fill: parent
+                                        anchors.margins: 1
+                                        source: bigImageFrame.visible ? toastCard.modelData.bigImage : ""
+                                        fillMode: Image.PreserveAspectCrop
+                                        asynchronous: true
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+
+                                    Text {
+                                        visible: (toastCard.modelData?.summary ?? "") !== ""
+                                        text: toastCard.modelData?.summary ?? ""
+                                        font { family: Config.fontFamily; pixelSize: 13; bold: true }
+                                        color: Theme.text
+                                        Layout.fillWidth: true
+                                        wrapMode: Text.WordWrap
+                                        maximumLineCount: 2
+                                        elide: Text.ElideRight
+                                    }
+
+                                    Text {
+                                        visible: (toastCard.modelData?.body ?? "") !== ""
+                                        text: toastCard.modelData?.body ?? ""
+                                        font { family: Config.fontFamily; pixelSize: 12 }
+                                        color: Theme.subtle
+                                        Layout.fillWidth: true
+                                        wrapMode: Text.WordWrap
+                                        maximumLineCount: 3
+                                        elide: Text.ElideRight
+                                    }
+
+                                    // Some senders (Claude Code among them)
+                                    // include an action with an empty label —
+                                    // probably a default/icon-only action
+                                    // their client expects its OWN UI to
+                                    // render specially, not something meant
+                                    // to show as a blank pill here. Filtered
+                                    // out rather than rendered empty.
+                                    RowLayout {
+                                        readonly property var visibleActions: (toastCard.modelData?.actions ?? []).filter(a => (a.text ?? "") !== "")
+                                        visible: visibleActions.length > 0
+                                        Layout.fillWidth: true
+                                        Layout.topMargin: 4
+                                        spacing: 6
+                                        // Right-aligned, not stretched: equal
+                                        // full-width buttons imply equal weight
+                                        // and turn a mostly-ignored control into
+                                        // the toast's biggest hit target.
+                                        // Buttons size to their label instead.
+                                        Item { Layout.fillWidth: true }
+                                        Repeater {
+                                            model: parent.visibleActions
+                                            delegate: Rectangle {
+                                                required property var modelData
+                                                implicitWidth: btnLabel.implicitWidth + 24
+                                                height: 28; radius: Config.radiusCell
+                                                // Recessed → level → raised
+                                                // against the card's own elev2
+                                                // ink (0.05/0.10/0.16), never
+                                                // outranking the card it sits
+                                                // on — and edgeStrong instead
+                                                // of edge, since edge's
+                                                // contrast is calibrated
+                                                // against bare `base`, not a
+                                                // card (halved effective
+                                                // contrast otherwise, which is
+                                                // why a plain-edge border here
+                                                // read as barely-there). No
+                                                // shadow of its own: the halo
+                                                // belongs to the toast as a
+                                                // whole.
+                                                color: actionArea.pressed ? Theme.controlPress
+                                                    : actionArea.containsMouse ? Theme.controlHover : Theme.controlRest
+                                                border.width: 1
+                                                border.color: Theme.edgeStrong
+                                                Behavior on color { ColorAnimation { duration: 80 } }
+                                                Text {
+                                                    id: btnLabel
+                                                    anchors.centerIn: parent
+                                                    text: modelData.text ?? ""
+                                                    font { family: Config.fontFamily; pixelSize: 11 }
+                                                    color: actionArea.containsMouse ? Theme.text : Theme.subtle
+                                                }
+                                                MouseArea {
+                                                    id: actionArea
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    onClicked: modelData.invoke()
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
+                        } // toastContent
 
                         // Normal-urgency countdown hairline: shrinks from full
                         // width to 0 over the 6s auto-expire window. Inset

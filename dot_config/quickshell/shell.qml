@@ -391,18 +391,28 @@ ShellRoot {
                 id: notification.id,
                 appName: notification.appName,
                 appIcon: notification.appIcon,
-                // `image` (from the image-data/image-path hint) is a
-                // notification-specific picture distinct from the app's
-                // generic icon — a contact photo, a screenshot preview —
-                // and takes priority when present. appIcon is very often a
-                // bare icon-theme name per spec ("dialog-information"), not
-                // a loadable path, so it needs resolving against the
+                // Small badge next to the app name — appIcon is very often
+                // a bare icon-theme name per spec ("dialog-information"),
+                // not a loadable path, so it needs resolving against the
                 // current theme; Image can't do that lookup itself.
                 // Quickshell.iconPath() already does exactly that (and
                 // passes an already-absolute path through unchanged), with
                 // an empty-string fallback if nothing resolves.
-                resolvedIcon: notification.image
-                    || (notification.appIcon ? Quickshell.iconPath(notification.appIcon, "") : ""),
+                smallIcon: notification.appIcon ? Quickshell.iconPath(notification.appIcon, "") : "",
+                // `image` (from the image-data/image-path hint) is a
+                // notification-specific picture distinct from the app's
+                // generic icon — a contact photo, an album cover, a
+                // screenshot preview — and gets its own larger treatment in
+                // the UI rather than being squeezed into the same small
+                // badge slot as a generic app logo. Not always a real path
+                // either — some senders (including this repo's own
+                // screenshot keybind, via `notify-send --icon=NAME`) put a
+                // bare icon-theme name in this hint too, not just actual
+                // image-data/image-path content, so it needs the same
+                // theme-lookup treatment as appIcon above or it renders as
+                // nothing (invisible at 16px, an obvious blank square now
+                // that it drives a 48px thumbnail).
+                bigImage: notification.image ? Quickshell.iconPath(notification.image, "") : "",
                 summary: notification.summary,
                 body: notification.body,
                 urgency: notification.urgency ?? 1,

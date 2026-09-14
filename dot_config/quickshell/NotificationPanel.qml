@@ -308,6 +308,12 @@ Scope {
                                 border.color: Theme.accent
 
                                 // Head row: full content (icon, summary, body, actions, count badge).
+                                // See NotificationToasts.qml for why a real
+                                // notification-specific image (bigImage) gets
+                                // its own larger thumbnail instead of sharing
+                                // the small appIcon badge slot, and why the
+                                // header spans the full width above it rather
+                                // than sitting beside it.
                                 ColumnLayout {
                                     id: groupCol
                                     visible: groupDelegate.isHead
@@ -320,8 +326,8 @@ Scope {
                                         spacing: 6
 
                                         Image {
-                                            visible: (groupDelegate.primary.resolvedIcon ?? "") !== ""
-                                            source: groupDelegate.primary.resolvedIcon ?? ""
+                                            visible: (groupDelegate.primary.smallIcon ?? "") !== ""
+                                            source: groupDelegate.primary.smallIcon ?? ""
                                             Layout.preferredWidth: 14
                                             Layout.preferredHeight: 14
                                             sourceSize.width: 14
@@ -404,68 +410,99 @@ Scope {
                                         }
                                     }
 
-                                    Text {
-                                        visible: (groupDelegate.primary.summary ?? "") !== ""
-                                        text: groupDelegate.primary.summary ?? ""
-                                        font { family: Config.fontFamily; pixelSize: 12; bold: true }
-                                        color: Theme.text
-                                        Layout.fillWidth: true
-                                        wrapMode: Text.WordWrap
-                                        maximumLineCount: 2
-                                        elide: Text.ElideRight
-                                    }
-
-                                    Text {
-                                        visible: (groupDelegate.primary.body ?? "") !== ""
-                                        text: groupDelegate.primary.body ?? ""
-                                        font { family: Config.fontFamily; pixelSize: 11 }
-                                        color: Theme.subtle
-                                        Layout.fillWidth: true
-                                        wrapMode: Text.WordWrap
-                                        maximumLineCount: 2
-                                        elide: Text.ElideRight
-                                    }
-
-                                    // See NotificationToasts.qml for why
-                                    // empty-label actions are filtered rather
-                                    // than rendered as a blank pill, and for
-                                    // the recessed-fill / edgeStrong reasoning
-                                    // below.
                                     RowLayout {
-                                        readonly property var visibleActions: (groupDelegate.primary.actions ?? []).filter(a => (a.text ?? "") !== "")
-                                        visible: visibleActions.length > 0
                                         Layout.fillWidth: true
-                                        Layout.topMargin: 2
-                                        spacing: 6
-                                        Item { Layout.fillWidth: true }
-                                        Repeater {
-                                            model: parent.visibleActions
-                                            delegate: Rectangle {
-                                                required property var modelData
-                                                implicitWidth: btnLabel.implicitWidth + 24
-                                                height: 28; radius: Config.radiusCell
-                                                color: actionHover.pressed ? Theme.controlPress
-                                                    : actionHover.containsMouse ? Theme.controlHover : Theme.controlRest
-                                                border.width: 1
-                                                border.color: Theme.edgeStrong
-                                                Behavior on color { ColorAnimation { duration: 80 } }
-                                                Text {
-                                                    id: btnLabel
-                                                    anchors.centerIn: parent
-                                                    text: modelData.text ?? ""
-                                                    font { family: Config.fontFamily; pixelSize: 11 }
-                                                    color: actionHover.containsMouse ? Theme.text : Theme.subtle
-                                                }
-                                                MouseArea {
-                                                    id: actionHover
-                                                    anchors.fill: parent
-                                                    hoverEnabled: true
-                                                    onClicked: modelData.invoke()
+                                        spacing: 8
+
+                                        Rectangle {
+                                            id: bigImageFrame
+                                            visible: (groupDelegate.primary.bigImage ?? "") !== ""
+                                            Layout.preferredWidth: 40
+                                            Layout.preferredHeight: 40
+                                            Layout.alignment: Qt.AlignTop
+                                            radius: Config.radiusCell
+                                            color: Theme.elev1
+                                            border.width: 1
+                                            border.color: Theme.edgeStrong
+                                            clip: true
+                                            Image {
+                                                anchors.fill: parent
+                                                anchors.margins: 1
+                                                source: bigImageFrame.visible ? groupDelegate.primary.bigImage : ""
+                                                fillMode: Image.PreserveAspectCrop
+                                                asynchronous: true
+                                            }
+                                        }
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 3
+
+                                            Text {
+                                                visible: (groupDelegate.primary.summary ?? "") !== ""
+                                                text: groupDelegate.primary.summary ?? ""
+                                                font { family: Config.fontFamily; pixelSize: 12; bold: true }
+                                                color: Theme.text
+                                                Layout.fillWidth: true
+                                                wrapMode: Text.WordWrap
+                                                maximumLineCount: 2
+                                                elide: Text.ElideRight
+                                            }
+
+                                            Text {
+                                                visible: (groupDelegate.primary.body ?? "") !== ""
+                                                text: groupDelegate.primary.body ?? ""
+                                                font { family: Config.fontFamily; pixelSize: 11 }
+                                                color: Theme.subtle
+                                                Layout.fillWidth: true
+                                                wrapMode: Text.WordWrap
+                                                maximumLineCount: 2
+                                                elide: Text.ElideRight
+                                            }
+
+                                            // See NotificationToasts.qml for
+                                            // why empty-label actions are
+                                            // filtered rather than rendered as
+                                            // a blank pill, and for the
+                                            // recessed-fill / edgeStrong
+                                            // reasoning below.
+                                            RowLayout {
+                                                readonly property var visibleActions: (groupDelegate.primary.actions ?? []).filter(a => (a.text ?? "") !== "")
+                                                visible: visibleActions.length > 0
+                                                Layout.fillWidth: true
+                                                Layout.topMargin: 2
+                                                spacing: 6
+                                                Item { Layout.fillWidth: true }
+                                                Repeater {
+                                                    model: parent.visibleActions
+                                                    delegate: Rectangle {
+                                                        required property var modelData
+                                                        implicitWidth: btnLabel.implicitWidth + 24
+                                                        height: 28; radius: Config.radiusCell
+                                                        color: actionHover.pressed ? Theme.controlPress
+                                                            : actionHover.containsMouse ? Theme.controlHover : Theme.controlRest
+                                                        border.width: 1
+                                                        border.color: Theme.edgeStrong
+                                                        Behavior on color { ColorAnimation { duration: 80 } }
+                                                        Text {
+                                                            id: btnLabel
+                                                            anchors.centerIn: parent
+                                                            text: modelData.text ?? ""
+                                                            font { family: Config.fontFamily; pixelSize: 11 }
+                                                            color: actionHover.containsMouse ? Theme.text : Theme.subtle
+                                                        }
+                                                        MouseArea {
+                                                            id: actionHover
+                                                            anchors.fill: parent
+                                                            hoverEnabled: true
+                                                            onClicked: modelData.invoke()
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
                                     }
-                                }
+                                } // groupCol
 
                                 // Continuation row: a compact one-liner for an
                                 // older entry in an expanded group. Each such

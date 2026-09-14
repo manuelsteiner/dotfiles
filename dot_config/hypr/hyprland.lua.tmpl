@@ -235,9 +235,20 @@ local activeWindowGeom = [[$(hyprctl -j activewindow | jq -r '"\(.at[0]),\(.at[1
 local function screenshot(region)
     local path = screenshots_dir .. '/$(date +"%Y-%m-%dT%H:%M:%S.%3N.png")'
     local geom = region and ('-g "' .. region .. '" ') or ""
+    -- Two things had to line up here, verified live against the actual
+    -- toast: (1) a bare icon-theme name ("camera-photo") never resolves —
+    -- Quickshell's notification icon lookup only ever matches bare names
+    -- against hicolor (the universal per-app-icon fallback theme), never
+    -- the actually-active theme (Adwaita/Breeze/etc), so it has to be an
+    -- absolute path instead. (2) this notify-send build's --icon/-i flag
+    -- doesn't set the plain app_icon field at all — it pre-loads the file
+    -- into raw image-data, which round-trips through Quickshell's
+    -- notification-image handling differently and didn't render reliably
+    -- even given a good path. -n/--app-icon sets the field our code
+    -- actually resolves as a simple path string, which did.
     return hl.dsp.exec_cmd(
         "grim " .. geom .. path ..
-        ' && notify-send --icon=camera-photo "Screenshot saved" "Saved to ' .. screenshots_dir .. '"'
+        ' && notify-send -n /usr/share/icons/Adwaita/scalable/mimetypes/image-x-generic.svg "Screenshot saved" "Saved to ' .. screenshots_dir .. '"'
     )
 end
 
@@ -247,7 +258,7 @@ local function screenrecord(region)
     local path = screenrecordings_dir .. '/$(date +"%Y-%m-%dT%H:%M:%S.%3N.mp4")'
     local geom = region and ('-g "' .. region .. '" ') or ""
     return hl.dsp.exec_cmd(
-        '(pkill -SIGINT wf-recorder && notify-send --icon=camera-video "Screenrecording saved" "Saved to '
+        '(pkill -SIGINT wf-recorder && notify-send -n /usr/share/icons/Adwaita/scalable/mimetypes/video-x-generic.svg "Screenrecording saved" "Saved to '
         .. screenrecordings_dir .. '") || wf-recorder ' .. geom .. '-f ' .. path
     )
 end
