@@ -139,8 +139,8 @@ Scope {
                                 Layout.fillWidth: true
                                 spacing: 8
                                 Image {
-                                    visible: (toastCard.modelData?.appIcon ?? "") !== ""
-                                    source: toastCard.modelData?.appIcon ?? ""
+                                    visible: (toastCard.modelData?.resolvedIcon ?? "") !== ""
+                                    source: toastCard.modelData?.resolvedIcon ?? ""
                                     Layout.preferredWidth: 16
                                     Layout.preferredHeight: 16
                                     sourceSize.width: 16

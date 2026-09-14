@@ -320,8 +320,8 @@ Scope {
                                         spacing: 6
 
                                         Image {
-                                            visible: (groupDelegate.primary.appIcon ?? "") !== ""
-                                            source: groupDelegate.primary.appIcon ?? ""
+                                            visible: (groupDelegate.primary.resolvedIcon ?? "") !== ""
+                                            source: groupDelegate.primary.resolvedIcon ?? ""
                                             Layout.preferredWidth: 14
                                             Layout.preferredHeight: 14
                                             sourceSize.width: 14

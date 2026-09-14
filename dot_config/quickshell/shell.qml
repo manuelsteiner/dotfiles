@@ -391,6 +391,18 @@ ShellRoot {
                 id: notification.id,
                 appName: notification.appName,
                 appIcon: notification.appIcon,
+                // `image` (from the image-data/image-path hint) is a
+                // notification-specific picture distinct from the app's
+                // generic icon — a contact photo, a screenshot preview —
+                // and takes priority when present. appIcon is very often a
+                // bare icon-theme name per spec ("dialog-information"), not
+                // a loadable path, so it needs resolving against the
+                // current theme; Image can't do that lookup itself.
+                // Quickshell.iconPath() already does exactly that (and
+                // passes an already-absolute path through unchanged), with
+                // an empty-string fallback if nothing resolves.
+                resolvedIcon: notification.image
+                    || (notification.appIcon ? Quickshell.iconPath(notification.appIcon, "") : ""),
                 summary: notification.summary,
                 body: notification.body,
                 urgency: notification.urgency ?? 1,
