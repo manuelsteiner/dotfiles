@@ -248,7 +248,7 @@ local function screenshot(region)
     -- actually resolves as a simple path string, which did.
     return hl.dsp.exec_cmd(
         "grim " .. geom .. path ..
-        ' && notify-send -n /usr/share/icons/Adwaita/scalable/mimetypes/image-x-generic.svg "Screenshot saved" "Saved to ' .. screenshots_dir .. '"'
+        ' && notify-send -a "Screenshot" -n /usr/share/icons/Adwaita/scalable/mimetypes/image-x-generic.svg "Screenshot saved" "Saved to ' .. screenshots_dir .. '"'
     )
 end
 
@@ -258,7 +258,7 @@ local function screenrecord(region)
     local path = screenrecordings_dir .. '/$(date +"%Y-%m-%dT%H:%M:%S.%3N.mp4")'
     local geom = region and ('-g "' .. region .. '" ') or ""
     return hl.dsp.exec_cmd(
-        '(pkill -SIGINT wf-recorder && notify-send -n /usr/share/icons/Adwaita/scalable/mimetypes/video-x-generic.svg "Screenrecording saved" "Saved to '
+        '(pkill -SIGINT wf-recorder && notify-send -a "Screencast" -n /usr/share/icons/Adwaita/scalable/mimetypes/video-x-generic.svg "Screenrecording saved" "Saved to '
         .. screenrecordings_dir .. '") || wf-recorder ' .. geom .. '-f ' .. path
     )
 end
