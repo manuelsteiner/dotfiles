@@ -132,6 +132,12 @@ local themes = {
     ["kanagawa-dragon"] = {
         "rebelot/kanagawa.nvim",
     },
+    ["lume"] = {
+        "danfry1/lume",
+        config = function()
+            require("lume").setup({})
+        end,
+    },
     ["mellow"] = {
         "mellow-theme/mellow.nvim",
     },
@@ -149,6 +155,9 @@ local themes = {
         config = function()
             require("poimandres").setup({})
         end,
+    },
+    ["terafox"] = {
+        "EdenEast/nightfox.nvim",
     },
     ["tokyonight-night"] = {
         "folke/tokyonight.nvim",

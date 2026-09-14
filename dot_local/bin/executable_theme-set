@@ -354,7 +354,7 @@ Singleton {
     readonly property color elev1:   Qt.tint(base, _ink($elev1_alpha))   // bar islands
     readonly property color elev2:   Qt.tint(base, _ink($elev2_alpha))   // popouts, toasts, OSD, menus
     readonly property color edge:    Qt.tint(base, _ink(Config.edgeAlpha))   // the 1px border on everything: islands, popouts, OSDs, toasts (outside is base)
-    // `edge`'s ink is calibrated against bare `base` (0 ink). A border that
+    // edge ink is calibrated against bare base (0 ink). A border that
     // instead sits on an elev1/elev2 card only nets edge-minus-card of
     // contrast (0.18-0.10 = 0.08 against elev2 — half the intended
     // delta, which is why it read as barely-there). edgeStrong restores the
@@ -364,7 +364,7 @@ Singleton {
     readonly property color edgeStrong: Qt.tint(base, _ink(0.28))
     // An already-elev2 row/card brightening on hover (e.g. a connected
     // device row) needs an opaque result too — animating a Behavior on
-    // color from opaque elev2 to translucent `press` interpolates the alpha
+    // color from opaque elev2 to translucent press interpolates the alpha
     // channel along with it, so partway through the 80ms transition the row
     // genuinely goes semi-transparent and flickers. Pre-composited here
     // instead of animating into translucency.
@@ -379,7 +379,7 @@ Singleton {
     // Fill for a control that sits *on* a card (buttons, chips), as a
     // recessed → level → raised progression relative to the card's own
     // elev2 ink (0.10) — rest reads as a well, never outranking the card;
-    // hover/press are the same values as `hover`/`press` above, named
+    // hover/press are the same values as hover/press above, named
     // separately so callers say what they mean (a control's own fill vs. a
     // hover highlight on an otherwise-bare row).
     readonly property color controlRest:  _ink(0.05)   // below the card — recessed
