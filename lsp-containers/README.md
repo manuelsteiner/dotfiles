@@ -22,6 +22,18 @@ after bumping a version in `versions.env`.
 Containerfiles describe only *how* to build. `build.sh` passes each `ARG` a
 Containerfile declares from `versions.env`.
 
+## Pruning
+
+`build.sh` labels every LSP image `nvim-lsp=true`. Keep those images while
+removing other unused Podman data with:
+
+```sh
+podman system prune -a --filter 'label!=nvim-lsp=true'
+```
+
+LSP runtime containers have the same label, though they normally disappear
+when Neovim exits because they use `--rm`.
+
 ### Work CA
 
 If a work network intercepts HTTPS, pass its PEM root certificate with

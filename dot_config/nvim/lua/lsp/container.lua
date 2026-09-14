@@ -23,7 +23,7 @@ local BASE_ARGS = {
   "--tmpfs=/tmp",
   "--tmpfs=/home/lsp",
   "--env=HOME=/home/lsp",
-  "--label=nvim-lsp",
+  "--label=nvim-lsp=true",
 }
 
 --- @class LspContainerOpts

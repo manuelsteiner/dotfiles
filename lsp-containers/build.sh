@@ -63,5 +63,5 @@ for name in "${targets[@]}"; do
   done < <(grep -oP '^\s*ARG\s+\K[A-Z_][A-Z0-9_]*' "${name}/Containerfile" | sort -u)
 
   echo ">>> localhost/nvim-lsp/${name}:local"
-  podman build "${ca_args[@]}" "${build_args[@]}" -t "localhost/nvim-lsp/${name}:local" "${name}"
+  podman build "${ca_args[@]}" "${build_args[@]}" --label nvim-lsp=true -t "localhost/nvim-lsp/${name}:local" "${name}"
 done
