@@ -84,7 +84,12 @@ BarCell {
             text: root.storedNotifications.length > 99
                 ? "99+" : root.storedNotifications.length.toString()
             font { family: Config.fontFamily; pixelSize: 11; bold: true; features: { "tnum": 1 } }
-            color: bellBlock.anyCritical ? Theme.red : Theme.redDim
+            // Full red regardless of critical state — redDim's actual
+            // number is what needs to read at a glance, and it was too
+            // low-contrast against the elev2 fill to do that. The ring
+            // (border, below) keeps the critical/routine distinction —
+            // the number itself doesn't need to also carry it.
+            color: Theme.red
         }
     }
 
