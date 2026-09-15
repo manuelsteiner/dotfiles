@@ -404,15 +404,24 @@ ShellRoot {
                 // generic icon — a contact photo, an album cover, a
                 // screenshot preview — and gets its own larger treatment in
                 // the UI rather than being squeezed into the same small
-                // badge slot as a generic app logo. Not always a real path
-                // either — some senders (including this repo's own
-                // screenshot keybind, via `notify-send --icon=NAME`) put a
-                // bare icon-theme name in this hint too, not just actual
-                // image-data/image-path content, so it needs the same
-                // theme-lookup treatment as appIcon above or it renders as
-                // nothing (invisible at 16px, an obvious blank square now
-                // that it drives a 48px thumbnail).
-                bigImage: notification.image ? Quickshell.iconPath(notification.image, "") : "",
+                // badge slot as a generic app logo. Almost always an
+                // already-resolved path/URI here (real image-data/
+                // image-path content — Signal's avatar, an album cover),
+                // which must NOT go through Quickshell.iconPath(): that
+                // function is for theme-*name* lookups, and running an
+                // already-valid resource through it broke real images
+                // (they rendered as an unloadable placeholder instead of
+                // the picture itself — a regression caught right after
+                // shipping it). Only a bare name with no path/scheme
+                // markers (some senders, e.g. this repo's own screenshot
+                // keybind formerly via `notify-send --icon=NAME`, put a
+                // theme name in this hint instead of real image content)
+                // needs that treatment.
+                bigImage: (function(img) {
+                    if (!img) return ""
+                    if (img.indexOf("/") !== -1 || img.indexOf(":") !== -1) return img
+                    return Quickshell.iconPath(img, "")
+                })(notification.image),
                 summary: notification.summary,
                 body: notification.body,
                 urgency: notification.urgency ?? 1,
