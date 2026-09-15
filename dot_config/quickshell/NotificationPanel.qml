@@ -461,13 +461,13 @@ Scope {
                                             }
 
                                             // See NotificationToasts.qml for
-                                            // why empty-label actions are
-                                            // filtered rather than rendered as
-                                            // a blank pill, and for the
-                                            // recessed-fill / edgeStrong
-                                            // reasoning below.
+                                            // why whitespace-only-label
+                                            // actions are filtered rather
+                                            // than rendered as a blank pill,
+                                            // and for the recessed-fill /
+                                            // edgeStrong reasoning below.
                                             RowLayout {
-                                                readonly property var visibleActions: (groupDelegate.primary.actions ?? []).filter(a => (a.text ?? "") !== "")
+                                                readonly property var visibleActions: (groupDelegate.primary.actions ?? []).filter(a => (a.text ?? "").trim() !== "")
                                                 visible: visibleActions.length > 0
                                                 Layout.fillWidth: true
                                                 Layout.topMargin: 2

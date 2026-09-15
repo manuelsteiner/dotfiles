@@ -297,14 +297,17 @@ Scope {
                                     }
 
                                     // Some senders (Claude Code among them)
-                                    // include an action with an empty label —
-                                    // probably a default/icon-only action
-                                    // their client expects its OWN UI to
-                                    // render specially, not something meant
+                                    // include an action with a whitespace-only
+                                    // label (kitty's notification action
+                                    // encoding sends a literal single space,
+                                    // not "" — a plain `!== ""` check doesn't
+                                    // catch it) — probably a default/icon-only
+                                    // action their client expects its OWN UI
+                                    // to render specially, not something meant
                                     // to show as a blank pill here. Filtered
                                     // out rather than rendered empty.
                                     RowLayout {
-                                        readonly property var visibleActions: (toastCard.modelData?.actions ?? []).filter(a => (a.text ?? "") !== "")
+                                        readonly property var visibleActions: (toastCard.modelData?.actions ?? []).filter(a => (a.text ?? "").trim() !== "")
                                         visible: visibleActions.length > 0
                                         Layout.fillWidth: true
                                         Layout.topMargin: 4
