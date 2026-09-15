@@ -395,10 +395,16 @@ ShellRoot {
                 // a bare icon-theme name per spec ("dialog-information"),
                 // not a loadable path, so it needs resolving against the
                 // current theme; Image can't do that lookup itself.
-                // Quickshell.iconPath() already does exactly that (and
-                // passes an already-absolute path through unchanged), with
-                // an empty-string fallback if nothing resolves.
-                smallIcon: notification.appIcon ? Quickshell.iconPath(notification.appIcon, "") : "",
+                // Quickshell.iconPath() does that lookup, but doesn't
+                // actually return its fallback when a bare name fails to
+                // resolve — it hands back a lazy "image://icon/NAME" URL
+                // regardless, which only fails later at draw time (a
+                // broken/checkered image), so hasThemeIcon() has to gate it.
+                smallIcon: (function(icon) {
+                    if (!icon) return ""
+                    if (icon.indexOf("/") !== -1 || icon.indexOf(":") !== -1) return icon
+                    return Quickshell.hasThemeIcon(icon) ? Quickshell.iconPath(icon, "") : ""
+                })(notification.appIcon),
                 // `image` (from the image-data/image-path hint) is a
                 // notification-specific picture distinct from the app's
                 // generic icon — a contact photo, an album cover, a
@@ -419,8 +425,27 @@ ShellRoot {
                 // needs that treatment.
                 bigImage: (function(img) {
                     if (!img) return ""
+                    // Quickshell itself wraps a bare theme-name hint (e.g.
+                    // Nautilus's mount/unmount icons) as "image://icon/NAME"
+                    // rather than resolving it — that's still just a name in
+                    // disguise, not real image content, and needs the same
+                    // iconPath() treatment (which will legitimately come back
+                    // empty here, since hicolor has no device icons; that's
+                    // correct — Nautilus's device glyph isn't worth "big
+                    // image" treatment anyway, only real pictures are).
+                    // iconPath() doesn't actually return the fallback when a
+                    // bare name fails to resolve — it always hands back the
+                    // lazy "image://icon/NAME" URL and only fails later, at
+                    // draw time (rendering as a broken/checkered image).
+                    // hasThemeIcon() has to be checked ourselves first.
+                    function resolveName(name) {
+                        return Quickshell.hasThemeIcon(name) ? Quickshell.iconPath(name, "") : ""
+                    }
+                    var iconUrlPrefix = "image://icon/"
+                    if (img.indexOf(iconUrlPrefix) === 0)
+                        return resolveName(img.slice(iconUrlPrefix.length))
                     if (img.indexOf("/") !== -1 || img.indexOf(":") !== -1) return img
-                    return Quickshell.iconPath(img, "")
+                    return resolveName(img)
                 })(notification.image),
                 summary: notification.summary,
                 body: notification.body,
