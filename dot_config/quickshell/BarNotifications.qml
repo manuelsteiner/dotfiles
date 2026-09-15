@@ -21,6 +21,10 @@ BarCell {
     active: Config.barAccentPolicy === "always"
         ? !root.notifSuppressed
         : root.storedNotifications.length > 0
+    // The unread-count badge already carries the "something's here" signal
+    // on its own — an active border on top of it doubles up right at the
+    // corner where the two sit closest together.
+    suppressActiveBorder: root.storedNotifications.length > 0
     urgent: false
     accentColor: Theme.notificationColor
 

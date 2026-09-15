@@ -12,6 +12,11 @@ Rectangle {
     property bool active: false
     property bool urgent: false
     property bool cellDisabled: false
+    // Fill/glyph accent still apply as normal — only the border itself is
+    // skipped. For a cell that already carries its own separate attention
+    // indicator (the notification bell's unread-count badge), the active
+    // border is redundant right where the two visually meet.
+    property bool suppressActiveBorder: false
     property bool hovered: false
     property bool pressed: false
 
@@ -38,7 +43,7 @@ Rectangle {
         : cell.pressed ? Theme.press
         : cell.hovered ? Theme.hover
         : "transparent"
-    border.width: (cell.active || cell.urgent) ? 1 : 0
+    border.width: ((cell.active && !cell.suppressActiveBorder) || cell.urgent) ? 1 : 0
     border.color: cell.active ? cell.accentColor : cell.urgentColor
 
     Behavior on color { ColorAnimation { duration: 80 } }
