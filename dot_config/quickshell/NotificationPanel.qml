@@ -133,7 +133,7 @@ Scope {
                             // an actually critical one.
                             visible: root.storedNotifications.length > 0
                             width: Math.max(20, countText.implicitWidth + 8)
-                            height: 20; radius: 10
+                            height: 20; radius: height / 2
                             color: Theme.elev2
                             border.width: 1
                             border.color: notifWindow.anyCritical ? Theme.red : Theme.redDim
@@ -343,10 +343,14 @@ Scope {
                                         }
 
                                         Rectangle {
-                                            // Elev2 fill + hairline ring, matching the bar badge.
+                                            // Elev2 fill + hairline ring, matching the bar badge —
+                                            // radius is half the height (a true stadium/pill shape,
+                                            // same formula the header count badge and bar badge use),
+                                            // not Config.radiusCell, which gave this one a visibly
+                                            // different, more rectangular corner treatment.
                                             visible: groupDelegate.groupCount > 1
                                             width: countBadge.implicitWidth + 8
-                                            height: 16; radius: Config.radiusCell
+                                            height: 16; radius: height / 2
                                             color: Theme.elev2
                                             border.width: 1
                                             border.color: groupDelegate.primary.urgency === NotificationUrgency.Critical ? Theme.red : Theme.redDim

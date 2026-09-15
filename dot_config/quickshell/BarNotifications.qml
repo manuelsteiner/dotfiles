@@ -63,11 +63,14 @@ BarCell {
         visible: root.storedNotifications.length > 0
         anchors.top: parent.top
         anchors.right: parent.right
-        anchors.topMargin: 1
-        anchors.rightMargin: 1
-        width: Math.max(14, badgeText.implicitWidth + 6)
-        height: 14
-        radius: 7
+        anchors.topMargin: 0
+        anchors.rightMargin: 0
+        // Bumped from 14/10px text — too small to actually read at a glance,
+        // which defeats the point of a badge. Radius stays height/2 (a true
+        // stadium/pill), matching the notification panel's badges.
+        width: Math.max(17, badgeText.implicitWidth + 7)
+        height: 17
+        radius: height / 2
         // Elev2 fill + a 1px hairline ring — reads as "just an outline"
         // against the near-black bar without being literally transparent
         // (which let the bell glyph show through the badge oddly).
@@ -80,7 +83,7 @@ BarCell {
             anchors.centerIn: parent
             text: root.storedNotifications.length > 99
                 ? "99+" : root.storedNotifications.length.toString()
-            font { family: Config.fontFamily; pixelSize: 10; bold: true; features: { "tnum": 1 } }
+            font { family: Config.fontFamily; pixelSize: 11; bold: true; features: { "tnum": 1 } }
             color: bellBlock.anyCritical ? Theme.red : Theme.redDim
         }
     }
