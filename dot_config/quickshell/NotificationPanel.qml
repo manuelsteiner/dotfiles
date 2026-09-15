@@ -64,7 +64,12 @@ Scope {
             readonly property bool anyCritical: root.storedNotifications.length > 0
                 && root.storedNotifications[0].urgency === NotificationUrgency.Critical
 
-            // Expand/collapse state keyed by groupKey.
+            // Expand/collapse state keyed by the head notification's own id,
+            // not groupKey() (appName) — the same app can appear in two
+            // separate, non-adjacent clusters (e.g. interleaved with another
+            // app's notification in between), each getting its own card and
+            // chevron. Keying by appName made those distinct clusters share
+            // one boolean, so toggling either one toggled both.
             property var expandedGroups: ({})
             function toggleGroup(key) {
                 var copy = Object.assign({}, notifWindow.expandedGroups)
@@ -95,7 +100,9 @@ Scope {
                 var nextHead = notifWindow.focusedIndex + 1 < notifWindow.headIndices.length
                     ? notifWindow.headIndices[notifWindow.focusedIndex + 1] : root.storedNotifications.length
                 var count = nextHead - storedIdx
-                var key = notifWindow.groupKey(root.storedNotifications[storedIdx])
+                // Expand state is keyed by the head's own id, not groupKey()
+                // (appName) — see expandedGroups below for why.
+                var key = root.storedNotifications[storedIdx].id.toString()
                 if (count > 1) notifWindow.toggleGroup(key)
             }
 
@@ -270,10 +277,10 @@ Scope {
                                 readonly property var modelData: root.storedNotifications[index]
                                 readonly property var primary: modelData
                                 // Display label only — falls back to a generic
-                                // string, not unique. groupKeyValue (below) is
-                                // what actually decides grouping.
+                                // string, not unique. groupKey() (via
+                                // headIndices, below) is what actually decides
+                                // membership/merging.
                                 readonly property string appName: modelData.appName || "Notification"
-                                readonly property string groupKeyValue: notifWindow.groupKey(modelData)
                                 // Membership in the precomputed, plain-integer
                                 // headIndices array — NOT root.storedNotifications[index-1].
                                 // A delegate reaching into a sibling element of the
@@ -293,7 +300,29 @@ Scope {
                                 }
                                 readonly property int groupCount: groupDelegate.isHead
                                     ? groupDelegate.nextHeadStoredIndex - index : 0
-                                readonly property bool expanded: !!notifWindow.expandedGroups[groupDelegate.groupKeyValue]
+                                // Which stored index is this delegate's group
+                                // head — needed by continuation rows too, not
+                                // just heads, since they share their head's
+                                // expand state. headIndices is small (one
+                                // entry per visual group), so a linear scan
+                                // for the closest head at-or-before `index`
+                                // is cheap.
+                                readonly property int headStoredIndex: {
+                                    var hs = notifWindow.headIndices
+                                    var found = -1
+                                    for (var k = hs.length - 1; k >= 0; k--) {
+                                        if (hs[k] <= index) { found = hs[k]; break }
+                                    }
+                                    return found
+                                }
+                                // Keyed by the head notification's own id, not
+                                // groupKey()/appName — the same app can appear
+                                // in two separate, non-adjacent clusters, and
+                                // keying by appName made those distinct
+                                // clusters share one expand/collapse flag.
+                                readonly property string expandKey: groupDelegate.headStoredIndex >= 0
+                                    ? root.storedNotifications[groupDelegate.headStoredIndex].id.toString() : ""
+                                readonly property bool expanded: !!notifWindow.expandedGroups[groupDelegate.expandKey]
                                 readonly property bool isFocused: groupDelegate.isHead && groupDelegate.headPos === notifWindow.focusedIndex
 
                                 // Continuation rows only ever render (as a
@@ -363,7 +392,7 @@ Scope {
                                             }
                                             MouseArea {
                                                 anchors.fill: parent
-                                                onClicked: notifWindow.toggleGroup(groupDelegate.groupKeyValue)
+                                                onClicked: notifWindow.toggleGroup(groupDelegate.expandKey)
                                             }
                                         }
 
@@ -376,7 +405,7 @@ Scope {
                                             MouseArea {
                                                 anchors.fill: parent
                                                 anchors.margins: -4
-                                                onClicked: notifWindow.toggleGroup(groupDelegate.groupKeyValue)
+                                                onClicked: notifWindow.toggleGroup(groupDelegate.expandKey)
                                             }
                                         }
 
