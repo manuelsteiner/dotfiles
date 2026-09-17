@@ -1,0 +1,108 @@
+directory: /run/media/manuel/T7/Music
+library: ~/.config/beets/library.db
+
+per_disc_numbering: yes
+
+pluginpath:
+  - ~/.config/beets/plugins
+
+plugins:
+  - musicbrainz
+  - bandcamp
+  - fetchart
+  - edit
+  - duplicates
+  - ftintitle
+  - inline
+  - zero
+  - albumrootart
+
+import:
+  copy: no
+  move: no
+  write: no
+  autotag: no
+  duplicate_action: ask
+
+replace:
+  '[\\/]': _
+  '[<>:"?*|]': _
+  '^\\.': _
+  '[\x00-\x1f]': _
+  '^\s+': ''
+  '\s+$': ''
+  '^-': _
+
+art_filename: cover
+
+fetchart:
+  auto: no
+  cautious: yes
+  store_source: yes
+  fetch_for_asis: yes
+
+  sources:
+    - filesystem
+    - cover_art_url
+    - coverart: release
+    - coverart: releasegroup
+    - itunes
+
+bandcamp:
+  search_max: 3
+  art: yes
+
+  exclude_extra_fields:
+    - lyrics
+    - comments
+
+  genre:
+    capitalize: no
+    maximum: 0
+    mode: progressive
+
+edit:
+  itemfields: track disc title artist albumartist album year genre
+  albumfields: album albumartist year genre
+
+ftintitle:
+  auto: yes
+  drop: no
+  keep_in_artist: no
+  format: "(feat. {0})"
+
+zero:
+  auto: yes
+  update_database: no
+  fields: >
+    mb_albumartistid
+    mb_albumartistids
+    mb_albumid
+    mb_artistid
+    mb_artistids
+    mb_releasegroupid
+    mb_releasetrackid
+    mb_trackid
+
+  mb_albumartistid: ['https?://.*\.bandcamp\.com']
+  mb_albumartistids: ['https?://.*\.bandcamp\.com']
+  mb_albumid: ['https?://.*\.bandcamp\.com']
+  mb_artistid: ['https?://.*\.bandcamp\.com']
+  mb_artistids: ['https?://.*\.bandcamp\.com']
+  mb_releasegroupid: ['https?://.*\.bandcamp\.com']
+  mb_releasetrackid: ['https?://.*\.bandcamp\.com']
+  mb_trackid: ['https?://.*\.bandcamp\.com']
+
+hook:
+  hooks:
+    - event: art_set
+      command: ~/.local/bin/beets-art-root "{album.artpath}"
+
+item_fields:
+  multidisc: 1 if disctotal > 1 else 0
+  discnum: int(disc)
+
+paths:
+  default: $albumartist/$album/%if{$multidisc,Disc $discnum/}$track - $title
+  singleton: $artist/$title
+  comp: Various Artists/$album/%if{$multidisc,Disc $discnum/}$track - $title

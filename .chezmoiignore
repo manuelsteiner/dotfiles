@@ -5,6 +5,11 @@
 .config/wofi
 {{ end }}
 
+# The music library is attached to the NUC only.
+{{ if ne .host "nuc" }}
+.config/beets
+{{ end }}
+
 # `theme-set` owns these active-theme links. The selected theme is local state
 # and must not be reset by `chezmoi apply`.
 .config/bat/config
