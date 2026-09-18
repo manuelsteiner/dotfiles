@@ -16,6 +16,7 @@ plugins:
   - inline
   - zero
   - albumrootart
+  - embedart
 
 import:
   copy: no
@@ -47,6 +48,10 @@ fetchart:
     - coverart: release
     - coverart: releasegroup
     - itunes
+
+embedart:
+  auto: yes
+  ifempty: no
 
 bandcamp:
   search_max: 3
