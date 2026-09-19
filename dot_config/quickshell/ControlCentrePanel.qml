@@ -328,8 +328,8 @@ Scope {
 
             // ── Quick actions ──
             Process { id: screenshotProc; command: ["sh", "-c",
-                "grim \"$(slurp)\" \"$HOME/Pictures/Screenshots/$(date +%Y-%m-%dT%H:%M:%S.%3N.png)\""
-                + " && notify-send --icon=camera-photo 'Screenshot saved' \"Saved to $HOME/Pictures/Screenshots\""] }
+                "path=\"$HOME/Pictures/Screenshots/$(date +%Y-%m-%dT%H:%M:%S.%3N.png)\"; grim \"$(slurp)\" \"$path\""
+                + " && wl-copy --type image/png < \"$path\" && notify-send --icon=camera-photo 'Screenshot saved and copied' \"Saved to $HOME/Pictures/Screenshots and copied to the clipboard\""] }
 
             PopoutFrame {
                 anchors.bottom: parent.bottom

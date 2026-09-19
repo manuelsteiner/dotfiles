@@ -247,8 +247,9 @@ local function screenshot(region)
     -- even given a good path. -n/--app-icon sets the field our code
     -- actually resolves as a simple path string, which did.
     return hl.dsp.exec_cmd(
-        "grim " .. geom .. path ..
-        ' && notify-send -a "Screenshot" -n /usr/share/icons/Adwaita/scalable/mimetypes/image-x-generic.svg "Screenshot saved" "Saved to ' .. screenshots_dir .. '"'
+        'path="' .. path .. '"; grim ' .. geom .. '"$path"' ..
+        " && wl-copy --type image/png < \"$path\"" ..
+        ' && notify-send -a "Screenshot" -n /usr/share/icons/Adwaita/scalable/mimetypes/image-x-generic.svg "Screenshot saved and copied" "Saved to ' .. screenshots_dir .. ' and copied to the clipboard"'
     )
 end
 
