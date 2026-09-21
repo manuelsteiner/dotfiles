@@ -14,6 +14,7 @@ return {
 	    'html',
 	    'latex',
 	    'lua',
+        'markdown',
 	    'php',
 	    'python',
 	    'query',
