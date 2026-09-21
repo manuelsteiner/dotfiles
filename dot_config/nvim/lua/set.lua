@@ -23,6 +23,13 @@ vim.opt['softtabstop'] = 4
 vim.opt['shiftwidth'] = 4
 vim.opt['expandtab'] = true
 
+vim.opt['wrap'] = true
+vim.opt['linebreak'] = true
+vim.opt['showbreak'] = ">"
+vim.opt['cpoptions'] = vim.opt['cpoptions'] + 'n' -- move '>' to gutter
+vim.opt['breakindent'] = true
+vim.opt['breakindentopt'] = { 'sbr', 'list:-1' }
+
 vim.opt['backupdir'] = vim.fn.expand('~/.nvim/backup/')
 vim.opt['directory'] = vim.fn.expand('~/.nvim/swap/')
 vim.opt['undodir'] = vim.fn.expand('~/.nvim/undo/')

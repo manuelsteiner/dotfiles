@@ -124,6 +124,14 @@ vim.api.nvim_create_autocmd({ 'BufReadPost', "BufWritePost" }, {
 })
 
 vim.api.nvim_create_autocmd("FileType", {
+    pattern = "markdown",
+    group = group,
+    callback = function(args)
+        require("markdown").setup(args.buf)
+    end,
+})
+
+vim.api.nvim_create_autocmd("FileType", {
     pattern = {
         "markdown",
         "text",
