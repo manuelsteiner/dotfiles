@@ -11,7 +11,7 @@ vim.opt['foldlevelstart'] = 99
 vim.opt['number'] = true
 vim.opt['relativenumber'] = true
 
-vim.opt['cursorline'] = false
+vim.opt['cursorline'] = true
 
 vim.opt['laststatus'] = 0
 
