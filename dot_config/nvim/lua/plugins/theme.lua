@@ -94,7 +94,7 @@ local function apply_oled_picker_surfaces()
     }
     for _, win in ipairs(vim.api.nvim_list_wins()) do
         local filetype = vim.bo[vim.api.nvim_win_get_buf(win)].filetype
-        if filetype:match("^snacks_picker_") or filetype == "snacks_layout_box" then
+        if filetype:match("snacks_picker_") or filetype == "snacks_layout_box" then
             for _, group in ipairs(groups) do
                 local highlight = resolved_highlight(group)
                 highlight.default = nil
