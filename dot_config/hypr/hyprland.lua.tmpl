@@ -274,9 +274,9 @@ hl.bind(cmdMod  .. " + SHIFT + 5",                    screenrecord())
 hl.bind(cmdMod  .. " + SHIFT + 6",                    screenrecord("$(slurp)"))
 hl.bind(mainMod .. " + " .. cmdMod .. " + SHIFT + 6", screenrecord(activeWindowGeom))
 
--- Autio recording for text to speech
-hl.bind(cmdMod .. " + BACKSPACE", hl.dsp.exec_cmd("pkill -USR2 -x handy"))
-hl.bind(cmdMod .. " + BACKSPACE", hl.dsp.exec_cmd("pkill -USR2 -x handy"), { release = true })
+-- Dictation is compositor-owned, so Voxtype's evdev hotkey stays disabled.
+-- Super+Backspace toggles recording and works without input-group access.
+hl.bind(cmdMod .. " + BACKSPACE", hl.dsp.exec_cmd("voxtype record toggle"))
 
 -- Clipboard history
 hl.bind(cmdMod .. " + V",

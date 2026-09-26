@@ -22,6 +22,15 @@ Singleton {
     property bool enableVolumeOsd: true
     property bool enableMicrophoneOsd: true
     property bool enableBrightnessOsd: true
+    // Reads Voxtype's state file and renders a native dictation indicator.
+    // It remains invisible until the voxtype daemon writes a non-idle state.
+    property bool enableVoxtypeOsd: true
+    property string voxtypeStateFile: Quickshell.env("XDG_RUNTIME_DIR") + "/voxtype/state"
+    property int voxtypeOsdWidth: 260
+    property int voxtypeOsdBottomInset: 40
+    property string voxtypeKeybind: "Super+Backspace"
+    // Show the short keybind reminder at the start of each dictation.
+    property bool voxtypeShowKeyHint: true
     property bool enableVolumeBar: false
     property bool enableMicrophoneBar: false
     property bool enableBrightnessBar: false

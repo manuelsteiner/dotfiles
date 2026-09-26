@@ -72,6 +72,11 @@ ShellRoot {
     property bool _suppressMicOsd: false
     property string micOsdScreen: ""
 
+    // ── Voxtype OSD state ──
+    // The component owns the daemon-state reader. Keep only the monitor here,
+    // mirroring the other OSDs: a recording must not jump screens mid-flight.
+    property string voxtypeOsdScreen: ""
+
     Connections {
         target: Config.enableMicrophoneOsd ? (Pipewire.defaultAudioSource?.audio ?? null) : null
         function onVolumeChanged() { root.showMicOsd() }
@@ -555,6 +560,7 @@ ShellRoot {
     VolumeOsd {}
     MicrophoneOsd {}
     BrightnessOsd {}
+    DictationOsd {}
     PowerMenu {}
     TrayContextMenu {}
     TooltipPanel {}
