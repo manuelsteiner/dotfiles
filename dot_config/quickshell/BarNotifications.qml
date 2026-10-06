@@ -28,9 +28,9 @@ BarCell {
     urgent: false
     accentColor: Theme.notificationColor
 
-    // DND is a deliberate click — shake the bell. A rising unread count is
-    // passive (something arrived) — pop the badge instead, and only on the
-    // way up, not when notifications are cleared/dismissed.
+    // Manual DND is a deliberate click, so shake the bell. Fullscreen
+    // suppression is passive, so blip the bell. A rising unread count blips
+    // the badge instead, and only on the way up.
     property int _lastCount: root.storedNotifications.length
     // DND is a shell-global toggle observed identically by every monitor's
     // bar, regardless of which one (if any) you actually clicked — gate the
@@ -45,8 +45,10 @@ BarCell {
             bellBlock._lastCount = root.storedNotifications.length
         }
         function onDndEnabledChanged() { if (bellBlock.isFocusedScreen) iconShake.trigger() }
+        function onAutoDndChanged() { if (bellBlock.isFocusedScreen) bellBlip.trigger() }
     }
     IconShake { id: iconShake }
+    IconBlip { id: bellBlip; target: bellIcon }
     IconBlip { id: badgeBlip; target: badgeRect }
 
     Text {
