@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Services.UPower
 import QtQuick
 import QtQuick.Layouts
@@ -33,8 +34,22 @@ BarCell {
     urgent: false
     accentColor: batBlock.tierColor
 
+    // Connecting or removing external power is an intentional physical
+    // action, so give it the same tactile cue as mute and DND. UPower also
+    // emits an initial state while the bar loads; record that without motion.
+    property bool _chargingKnown: false
+    readonly property bool isFocusedScreen: Config.interactiveEffectMonitorMode !== "focused"
+        || Hyprland.monitorFor(batBlock.screen)?.name === Hyprland.focusedMonitor?.name
+    onChargingChanged: {
+        if (batBlock._chargingKnown && batBlock.isFocusedScreen)
+            iconShake.trigger()
+        batBlock._chargingKnown = true
+    }
+    IconShake { id: iconShake }
+
     Text {
         anchors.centerIn: parent
+        transform: [iconShake]
         font.family: Config.fontFamily
         font.pixelSize: 18
         color: batBlock.glyphColor
