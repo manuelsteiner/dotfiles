@@ -45,7 +45,9 @@ BarCell {
             bellBlock._lastCount = root.storedNotifications.length
         }
         function onDndEnabledChanged() { if (bellBlock.isFocusedScreen) iconShake.trigger() }
-        function onAutoDndChanged() { if (bellBlock.isFocusedScreen) bellBlip.trigger() }
+        // Auto suppression is passive status feedback, like a network link,
+        // so all visible bars receive its blip.
+        function onAutoDndChanged() { bellBlip.trigger() }
     }
     IconShake { id: iconShake }
     IconBlip { id: bellBlip; target: bellIcon }
