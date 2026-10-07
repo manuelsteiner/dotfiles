@@ -42,3 +42,8 @@ lsp-containers
 .local/bin/share-agent-artefact
 .local/bin/share-verification-artefact
 {{ end }}
+
+{{ if ne .role "work" }}
+.local/bin/commit-helper
+.local/bin/infra-committer
+{{ end }}
