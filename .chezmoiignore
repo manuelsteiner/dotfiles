@@ -44,6 +44,7 @@ lsp-containers
 {{ end }}
 
 {{ if ne .role "work" }}
+.config/go/env
 .local/bin/commit-helper
 .local/bin/infra-committer
 {{ end }}
