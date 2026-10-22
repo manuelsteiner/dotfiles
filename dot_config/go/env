@@ -1,1 +1,1 @@
-GOTOOLCHAIN=auto
+GOTOOLCHAIN=go1.27.3+auto
