@@ -45,12 +45,6 @@ vim.api.nvim_create_autocmd("LspAttach", {
         opts.desc = "Show LSP references"
         vim.keymap.set("n", "<leader>lr", function() Snacks.picker.lsp_references() end, opts)
 
-        opts.desc = "Go to declaration"
-        vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
-
-        opts.desc = "Go to definition"
-        vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
-
         opts.desc = "Show LSP definitions"
         vim.keymap.set("n", "<leader>ld", function() Snacks.picker.lsp_definitions() end, opts)
 
@@ -69,10 +63,10 @@ vim.api.nvim_create_autocmd("LspAttach", {
         opts.desc = "Show buffer diagnostics"
         vim.keymap.set("n", "<leader>lx", function() Snacks.picker.diagnostics_buffer() end, opts)
 
-        opts.desc = "Go to previous diagnostic"
+        opts.desc = "Go to next diagnostic"
         vim.keymap.set("n", "]d", function() vim.diagnostic.jump({count = 1, float = false}) end, opts)
 
-        opts.desc = "Go to next diagnostic"
+        opts.desc = "Go to previous diagnostic"
         vim.keymap.set("n", "[d", function() vim.diagnostic.jump({count = -1, float = false}) end, opts)
 
         opts.desc = "Show documentation for what is under cursor"
