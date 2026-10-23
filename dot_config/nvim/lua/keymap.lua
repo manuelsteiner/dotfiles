@@ -12,3 +12,7 @@ vim.keymap.set("v", "<C-k>", ":move '<-2<CR>gv=gv")
 vim.keymap.set({ "n", "v" }, "<leader>y", '"+y')
 vim.keymap.set({ "n", "v" }, "<leader>d", '"+d')
 vim.keymap.set({ "n", "v" }, "<leader>p", '"+p')
+
+vim.keymap.set({ "n", "v" }, "<leader>Y", '"+Y')
+vim.keymap.set({ "n", "v" }, "<leader>D", '"+D')
+vim.keymap.set({ "n", "v" }, "<leader>P", '"+P')

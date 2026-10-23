@@ -67,10 +67,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
         vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
 
         opts.desc = "Show buffer diagnostics"
-        vim.keymap.set("n", "<leader>D", function() Snacks.picker.diagnostics_buffer() end, opts)
-
-        opts.desc = "Show line diagnostics"
-        vim.keymap.set("n", "<leader>d", vim.diagnostic.open_float, opts)
+        vim.keymap.set("n", "<leader>lx", function() Snacks.picker.diagnostics_buffer() end, opts)
 
         opts.desc = "Go to previous diagnostic"
         vim.keymap.set("n", "]d", function() vim.diagnostic.jump({count = 1, float = false}) end, opts)
