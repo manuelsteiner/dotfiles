@@ -87,7 +87,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
         end, opts)
 
         opts.desc = "Switch between default and detailed diagnostics view"
-        vim.keymap.set("n", "<leader>dt", function()
+        vim.keymap.set("n", "<leader>td", function()
             if vim.diagnostic.config().virtual_lines then
                 vim.diagnostic.config(default_diagnostics)
             else
