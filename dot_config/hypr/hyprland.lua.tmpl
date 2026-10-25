@@ -344,6 +344,7 @@ hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special" })
 -- Hyprscrolling: swap columns
 hl.bind(mainMod .. " + SHIFT + period", hl.dsp.layout("swapcol r"))
 hl.bind(mainMod .. " + SHIFT + comma",  hl.dsp.layout("swapcol l"))
+hl.bind(mainMod .. " + SHIFT + E",      hl.dsp.layout("consume_or_expel prev"))
 
 -- Scroll through workspaces
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
