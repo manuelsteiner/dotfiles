@@ -3,9 +3,40 @@ local M = {}
 local zettelkasten_dir = vim.fn.expand("~/Zettelkasten")
 local template_dir = zettelkasten_dir .. "/Templates"
 local inbox_dir = zettelkasten_dir .. "/Inbox"
+local notes_dir = zettelkasten_dir .. "/Zettelkasten"
 
 local function trim(value)
     return value:match("^%s*(.-)%s*$")
+end
+
+local function absolute_path(path)
+    return vim.fn.fnamemodify(path, ":p"):gsub("/+$", "")
+end
+
+local function is_inside(path, directory)
+    local candidate = absolute_path(path)
+    local parent = absolute_path(directory)
+    return candidate:sub(1, #parent + 1) == parent .. "/"
+end
+
+local function find_note_conflict(destination, current_buffer)
+    local destination_name = vim.fn.fnamemodify(destination, ":t"):lower()
+
+    for _, path in ipairs(vim.fn.globpath(notes_dir, "*", false, true)) do
+        if vim.fn.isdirectory(path) == 0
+            and vim.fn.fnamemodify(path, ":t"):lower() == destination_name then
+            return path
+        end
+    end
+
+    for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
+        if buffer ~= current_buffer then
+            local name = vim.api.nvim_buf_get_name(buffer)
+            if name ~= "" and absolute_path(name):lower() == absolute_path(destination):lower() then
+                return name
+            end
+        end
+    end
 end
 
 local function resolve_template(name)
@@ -121,6 +152,118 @@ function M.new(template_name, title)
     end)
 end
 
+function M.accept()
+    local buffer = vim.api.nvim_get_current_buf()
+    local source = absolute_path(vim.api.nvim_buf_get_name(buffer))
+    local inbox = absolute_path(inbox_dir)
+
+    if not is_inside(source, inbox) or not source:lower():match("%.md$") then
+        vim.notify("NoteAccept only works on Markdown notes inside the Zettelkasten Inbox", vim.log.levels.WARN)
+        return
+    end
+
+    local basename = vim.fn.fnamemodify(source, ":t")
+    local title = basename:match("^%d%d%d%d%d%d%d%d%s%-%s(.+)%.[mM][dD]$")
+    if not title or title == "" then
+        vim.notify("Inbox note filename must use YYYYMMDD - Title.md", vim.log.levels.ERROR)
+        return
+    end
+
+    if vim.fn.isdirectory(notes_dir) ~= 1 then
+        vim.notify("Zettelkasten notes folder does not exist: " .. notes_dir, vim.log.levels.ERROR)
+        return
+    end
+
+    local destination = notes_dir .. "/" .. title .. ".md"
+    local conflict = find_note_conflict(destination, buffer)
+    if conflict then
+        vim.notify("A note with this title already exists: " .. conflict .. ". Inbox note left unchanged.",
+            vim.log.levels.WARN)
+        return
+    end
+
+    if vim.fn.filereadable(source) ~= 1 then
+        vim.notify("Inbox note file no longer exists: " .. source, vim.log.levels.ERROR)
+        return
+    end
+
+    if vim.bo[buffer].modified then
+        local ok, err = pcall(vim.api.nvim_buf_call, buffer, function() vim.cmd("write") end)
+        if not ok then
+            vim.notify("Could not save Inbox note before moving it: " .. tostring(err), vim.log.levels.ERROR)
+            return
+        end
+    end
+
+    -- A hard link creates the destination only if it does not already exist;
+    -- unlinking the Inbox name then completes the move without overwriting.
+    local linked, link_error = vim.uv.fs_link(source, destination)
+    if not linked then
+        vim.notify("Could not move Inbox note: " .. tostring(link_error), vim.log.levels.ERROR)
+        return
+    end
+
+    local unlinked, unlink_error = vim.uv.fs_unlink(source)
+    if not unlinked then
+        vim.uv.fs_unlink(destination)
+        vim.notify("Could not remove the old Inbox path: " .. tostring(unlink_error), vim.log.levels.ERROR)
+        return
+    end
+
+    local renamed, rename_error = pcall(vim.api.nvim_buf_set_name, buffer, destination)
+    if not renamed then
+        vim.uv.fs_link(destination, source)
+        vim.uv.fs_unlink(destination)
+        vim.notify("Note moved back to Inbox because Neovim could not rename its buffer: "
+            .. tostring(rename_error), vim.log.levels.ERROR)
+        return
+    end
+
+    vim.bo[buffer].modified = false
+    vim.notify("Accepted note: " .. vim.fn.fnamemodify(destination, ":t"), vim.log.levels.INFO)
+end
+
+function M.delete()
+    local buffer = vim.api.nvim_get_current_buf()
+    local name = vim.api.nvim_buf_get_name(buffer)
+    local path = absolute_path(name)
+    local templates = absolute_path(template_dir)
+    local obsidian = absolute_path(zettelkasten_dir .. "/.obsidian")
+
+    if name == "" or not is_inside(path, zettelkasten_dir) or not path:lower():match("%.md$")
+        or is_inside(path, templates) or is_inside(path, obsidian) then
+        vim.notify("NoteDelete only works on Markdown notes in the Zettelkasten vault", vim.log.levels.WARN)
+        return
+    end
+
+    local filename = vim.fn.fnamemodify(path, ":t")
+    local prompt = "Delete " .. filename .. " permanently"
+    if vim.bo[buffer].modified then
+        prompt = prompt .. " and discard unsaved changes"
+    end
+    local confirmation = trim(vim.fn.input(prompt .. "? [y/N] ") or ""):lower()
+    if confirmation ~= "y" and confirmation ~= "yes" then
+        return
+    end
+
+    if vim.fn.filereadable(path) == 1 then
+        local deleted, delete_error = vim.uv.fs_unlink(path)
+        if not deleted then
+            vim.notify("Could not delete note: " .. tostring(delete_error), vim.log.levels.ERROR)
+            return
+        end
+    end
+
+    local ok, err = pcall(vim.api.nvim_buf_delete, buffer, { force = true })
+    if not ok then
+        vim.notify("Note file was deleted, but Neovim could not close its buffer: " .. tostring(err),
+            vim.log.levels.ERROR)
+        return
+    end
+
+    vim.notify("Deleted note: " .. filename, vim.log.levels.INFO)
+end
+
 function M.setup()
     vim.api.nvim_create_user_command("NoteFromTemplate", function(command)
         local template_name = command.fargs[1]
@@ -130,6 +273,16 @@ function M.setup()
         nargs = "*",
         complete = complete_template,
         desc = "Create a Zettelkasten note from a template",
+        force = true,
+    })
+
+    vim.api.nvim_create_user_command("NoteAccept", function() M.accept() end, {
+        desc = "Move the current Inbox note into Zettelkasten",
+        force = true,
+    })
+
+    vim.api.nvim_create_user_command("NoteDelete", function() M.delete() end, {
+        desc = "Delete the current Zettelkasten note",
         force = true,
     })
 end
