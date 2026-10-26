@@ -252,8 +252,12 @@ function M.delete()
     if vim.bo[buffer].modified then
         prompt = prompt .. " and discard unsaved changes"
     end
-    local confirmation = trim(vim.fn.input(prompt .. "? [y/N] ") or ""):lower()
-    if confirmation ~= "y" and confirmation ~= "yes" then
+    vim.api.nvim_echo({ { prompt .. "? [y/N] " } }, false, {})
+    vim.cmd("redraw")
+    local confirmation = vim.fn.getcharstr():lower()
+    vim.api.nvim_echo({ { "" } }, false, {})
+    vim.cmd("redraw")
+    if confirmation ~= "y" then
         return
     end
 
