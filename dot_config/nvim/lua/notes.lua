@@ -298,6 +298,14 @@ function M.setup()
         force = true,
     })
 
+    vim.api.nvim_create_user_command("NoteDaily", function()
+        M.new("Note", "Daily Notes")
+    end, {
+        nargs = 0,
+        desc = "Open today's Zettelkasten daily note",
+        force = true,
+    })
+
     local function sync_buffer_actions(buffer)
         if not vim.api.nvim_buf_is_valid(buffer) then
             return
