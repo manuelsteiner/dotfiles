@@ -219,6 +219,17 @@ function M.accept()
         return
     end
 
+    -- Reload from the destination so Neovim records that the buffer was read
+    -- from this existing path. This avoids E13 when `:wq` writes it later.
+    local reloaded, reload_error = pcall(vim.api.nvim_buf_call, buffer, function()
+        vim.cmd("edit!")
+    end)
+    if not reloaded then
+        vim.notify("Note moved, but Neovim could not reload it from its new path: "
+            .. tostring(reload_error), vim.log.levels.ERROR)
+        return
+    end
+
     vim.bo[buffer].modified = false
     vim.notify("Accepted note: " .. vim.fn.fnamemodify(destination, ":t"), vim.log.levels.INFO)
 end
