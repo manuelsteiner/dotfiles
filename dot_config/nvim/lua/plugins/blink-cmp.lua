@@ -1,3 +1,21 @@
+local function note_template_markdown_icon(ctx)
+    if vim.fn.getcmdtype() ~= ":" then
+        return nil
+    end
+
+    local command_line = vim.fn.getcmdline():lower():gsub("^%s*:", "")
+    if not command_line:match("^notefromtemplate%s") then
+        return nil
+    end
+
+    local label = ctx.label:lower()
+    if label ~= "note" and label ~= "meeting" then
+        return nil
+    end
+
+    return require("mini.icons").get("filetype", "markdown")
+end
+
 return {
     "saghen/blink.cmp",
     dependencies = {
@@ -35,6 +53,25 @@ return {
         completion = {
             documentation = { auto_show = false },
             ghost_text = { enabled = true },
+            menu = {
+                draw = {
+                    components = {
+                        kind_icon = {
+                            text = function(ctx)
+                                local icon = note_template_markdown_icon(ctx)
+                                return (icon or ctx.kind_icon) .. ctx.icon_gap
+                            end,
+                            highlight = function(ctx)
+                                local _, icon_highlight = note_template_markdown_icon(ctx)
+                                return { {
+                                    group = icon_highlight or ctx.kind_hl,
+                                    priority = 20000,
+                                } }
+                            end,
+                        },
+                    },
+                },
+            },
         },
 
         signature = {

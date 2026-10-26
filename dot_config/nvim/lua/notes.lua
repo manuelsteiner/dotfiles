@@ -25,8 +25,8 @@ end
 
 local function complete_template(arg_lead, command_line, cursor_pos)
     local before_cursor = command_line:sub(1, cursor_pos)
-    local arguments = before_cursor:match("^%s*:NoteFromTemplate%s*(.*)$")
-    if arguments == nil then
+    local command, arguments = before_cursor:match("^%s*(%S+)%s*(.*)$")
+    if not command or command:gsub("^:", ""):lower() ~= "notefromtemplate" then
         return {}
     end
 
