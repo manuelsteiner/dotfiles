@@ -26,7 +26,3 @@ vim.keymap.set("n", "<leader>nm", function() notes.new("Meeting") end,
     { desc = "New meeting note" })
 vim.keymap.set("n", "<leader>nd", function() notes.new("Note", "Daily Notes") end,
     { desc = "Open daily note" })
-vim.keymap.set("n", "<leader>na", notes.accept,
-    { desc = "Accept Inbox note" })
-vim.keymap.set("n", "<leader>nx", notes.delete,
-    { desc = "Delete Zettelkasten note" })

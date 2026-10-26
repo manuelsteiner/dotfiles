@@ -280,6 +280,13 @@ function M.delete()
 end
 
 function M.setup()
+    -- These actions are intentionally buffer-local: only vault Markdown notes
+    -- should expose them, with acceptance restricted to the Inbox.
+    pcall(vim.api.nvim_del_user_command, "NoteAccept")
+    pcall(vim.api.nvim_del_user_command, "NoteDelete")
+    pcall(vim.keymap.del, "n", "<leader>na")
+    pcall(vim.keymap.del, "n", "<leader>nx")
+
     vim.api.nvim_create_user_command("NoteFromTemplate", function(command)
         local template_name = command.fargs[1]
         local title = table.concat(command.fargs, " ", 2)
@@ -291,15 +298,58 @@ function M.setup()
         force = true,
     })
 
-    vim.api.nvim_create_user_command("NoteAccept", function() M.accept() end, {
-        desc = "Move the current Inbox note into Zettelkasten",
-        force = true,
+    local function sync_buffer_actions(buffer)
+        if not vim.api.nvim_buf_is_valid(buffer) then
+            return
+        end
+
+        local name = vim.api.nvim_buf_get_name(buffer)
+        local path = name ~= "" and absolute_path(name) or ""
+        local is_markdown = vim.bo[buffer].filetype == "markdown" and path:lower():match("%.md$") ~= nil
+        local in_vault = is_markdown and is_inside(path, zettelkasten_dir)
+            and not is_inside(path, template_dir)
+            and not is_inside(path, zettelkasten_dir .. "/.obsidian")
+        local in_inbox = in_vault and is_inside(path, inbox_dir)
+
+        local function remove_action(command, mapping)
+            pcall(vim.api.nvim_buf_del_user_command, buffer, command)
+            pcall(vim.keymap.del, "n", mapping, { buffer = buffer })
+        end
+
+        if in_inbox then
+            vim.api.nvim_buf_create_user_command(buffer, "NoteAccept", function() M.accept() end, {
+                desc = "Move the current Inbox note into Zettelkasten",
+                force = true,
+            })
+            vim.keymap.set("n", "<leader>na", M.accept, {
+                buffer = buffer,
+                desc = "Accept Inbox note",
+            })
+        else
+            remove_action("NoteAccept", "<leader>na")
+        end
+
+        if in_vault then
+            vim.api.nvim_buf_create_user_command(buffer, "NoteDelete", function() M.delete() end, {
+                desc = "Delete the current Zettelkasten note",
+                force = true,
+            })
+            vim.keymap.set("n", "<leader>nx", M.delete, {
+                buffer = buffer,
+                desc = "Delete Zettelkasten note",
+            })
+        else
+            remove_action("NoteDelete", "<leader>nx")
+        end
+    end
+
+    local group = vim.api.nvim_create_augroup("zettelkasten_note_actions", { clear = true })
+    vim.api.nvim_create_autocmd({ "BufEnter", "BufFilePost", "FileType" }, {
+        group = group,
+        callback = function(args) sync_buffer_actions(args.buf) end,
     })
 
-    vim.api.nvim_create_user_command("NoteDelete", function() M.delete() end, {
-        desc = "Delete the current Zettelkasten note",
-        force = true,
-    })
+    sync_buffer_actions(vim.api.nvim_get_current_buf())
 end
 
 return M
