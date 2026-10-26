@@ -74,8 +74,6 @@ Scope {
                         readonly property bool anyScreenHovered: root.hoveredToastIds.indexOf(toastCard.modelData?.id) !== -1
                         width: toastColumn.width
                         implicitHeight: toastContent.implicitHeight + 24
-                        border.color: toastCard.isCritical ? Theme.urgentColor : Theme.edge
-
                         // F-1: normal-urgency toasts auto-expire after 6s;
                         // critical toasts never auto-expire (and survive DND,
                         // handled in shell.qml). Low-urgency notifications
