@@ -23,6 +23,33 @@ local function resolve_template(name)
     end
 end
 
+local function complete_template(arg_lead, command_line, cursor_pos)
+    local before_cursor = command_line:sub(1, cursor_pos)
+    local arguments = before_cursor:match("^%s*:NoteFromTemplate%s*(.*)$")
+    if arguments == nil then
+        return {}
+    end
+
+    local preceding = arguments:sub(1, #arguments - #arg_lead)
+    if preceding:match("%S") then
+        return {}
+    end
+
+    local lead = arg_lead:lower()
+    local names = {}
+    for _, path in ipairs(vim.fn.globpath(template_dir, "*", false, true)) do
+        if vim.fn.isdirectory(path) == 0 and path:lower():match("%.md$") then
+            local name = vim.fn.fnamemodify(path, ":t:r"):lower()
+            if name:sub(1, #lead) == lead then
+                names[#names + 1] = name
+            end
+        end
+    end
+
+    table.sort(names)
+    return names
+end
+
 local function replace_template_tokens(lines, title, created_at)
     local iso_date = os.date("%Y-%m-%d", created_at)
     local long_date = os.date("%d %B %Y", created_at)
@@ -101,6 +128,7 @@ function M.setup()
         M.new(template_name, title ~= "" and title or nil)
     end, {
         nargs = "*",
+        complete = complete_template,
         desc = "Create a Zettelkasten note from a template",
         force = true,
     })
