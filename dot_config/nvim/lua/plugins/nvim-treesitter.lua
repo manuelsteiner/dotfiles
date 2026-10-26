@@ -36,7 +36,7 @@ return {
                 -- syntax highlighting
                 vim.treesitter.start() 
                 -- folds
-                vim.wo[0][0].foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+                vim.wo[0][0].foldexpr = 'v:lua.zettelkasten_foldexpr()'
                 vim.wo[0][0].foldmethod = 'expr'
                 -- indendation (experimental)
                 vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"

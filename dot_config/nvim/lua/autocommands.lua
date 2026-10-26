@@ -98,21 +98,57 @@ vim.api.nvim_create_autocmd({ 'BufReadPost', "BufWritePost" }, {
   group = group,
 
   callback = function(args)
-    local frontmatter_pattern = "^%-%-%-\n.-\n%-%-%-\n"
-
     local content = table.concat(vim.api.nvim_buf_get_lines(args.buf, 0, vim.api.nvim_buf_line_count(args.buf), false), "\n")
-
-    local frontmatter = content:match(frontmatter_pattern)
-
-    if frontmatter == nil then
-      return
+    local frontmatter = content:match("^%-%-%-\n.-\n%-%-%-\n")
+        or content:match("^%-%-%-\n.-\n%-%-%-$")
+    local frontmatter_end = 0
+    if frontmatter then
+      frontmatter_end = select(2, frontmatter:gsub("\n", "\n"))
+      if frontmatter:sub(-1) ~= "\n" then
+        frontmatter_end = frontmatter_end + 1
+      end
     end
+    vim.b[args.buf].frontmatter_fold_end = frontmatter_end
 
-    local _, count = frontmatter:gsub("\n","\n")
-
-    vim.cmd("1," .. count .. "fold")
+    -- `:fold` only works with foldmethod=manual. Markdown uses the Treesitter
+    -- expression foldmethod, so the frontmatter fold is provided by the
+    -- combined fold expression instead.
+    if frontmatter_end > 0 then
+      for _, win in ipairs(vim.fn.win_findbuf(args.buf)) do
+        vim.api.nvim_win_call(win, function()
+          vim.wo.foldmethod = "expr"
+          vim.wo.foldexpr = "v:lua.zettelkasten_foldexpr()"
+          vim.wo.foldtext = "v:lua.zettelkasten_foldtext()"
+          -- Keep the frontmatter folded while leaving ordinary Treesitter
+          -- folds (which use much lower levels) open.
+          vim.wo.foldlevel = 19
+        end)
+      end
+    end
   end,
 })
+
+_G.zettelkasten_foldexpr = function(lnum)
+    lnum = lnum or vim.v.lnum
+    local frontmatter_end = vim.b.frontmatter_fold_end or 0
+
+    if frontmatter_end > 0 then
+        if lnum == 1 then return ">20" end
+        if lnum < frontmatter_end then return 20 end
+        if lnum == frontmatter_end then return "<20" end
+    end
+
+    return vim.treesitter.foldexpr(lnum)
+end
+
+_G.zettelkasten_foldtext = function()
+    if vim.v.foldstart == 1 and (vim.b.frontmatter_fold_end or 0) > 0 then
+        local line_count = vim.v.foldend - vim.v.foldstart + 1
+        return string.format("Frontmatter · %d lines", line_count)
+    end
+
+    return vim.fn.foldtext()
+end
 
 vim.api.nvim_create_autocmd("FileType", {
     pattern = "markdown",

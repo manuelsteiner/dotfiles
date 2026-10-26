@@ -16,3 +16,13 @@ vim.keymap.set({ "n", "v" }, "<leader>p", '"+p')
 vim.keymap.set({ "n", "v" }, "<leader>Y", '"+Y')
 vim.keymap.set({ "n", "v" }, "<leader>D", '"+D')
 vim.keymap.set({ "n", "v" }, "<leader>P", '"+P')
+
+local notes = require("notes")
+notes.setup()
+
+vim.keymap.set("n", "<leader>nn", function() notes.new("Note") end,
+    { desc = "New note" })
+vim.keymap.set("n", "<leader>nm", function() notes.new("Meeting") end,
+    { desc = "New meeting note" })
+vim.keymap.set("n", "<leader>nd", function() notes.new("Note", "Daily Notes") end,
+    { desc = "Open daily note" })
