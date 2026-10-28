@@ -223,7 +223,7 @@ hl.bind(mainMod .. " + R",         hl.dsp.exec_cmd("hyprctl reload"))
 hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd("pkill quickshell; hyprctl dispatch 'hl.dsp.exec_cmd(\"quickshell\")'"))
 
 -- Switch display output (locked = works while session is locked)
-hl.bind(cmdMod .. " + D", hl.dsp.exec_cmd(displayoutput), { locked = true })
+hl.bind(mainMod .. " + SHIFT + D", hl.dsp.exec_cmd(displayoutput), { locked = true })
 
 -- Lock session
 hl.bind(cmdMod .. " + L", hl.dsp.exec_cmd("loginctl lock-session"))
