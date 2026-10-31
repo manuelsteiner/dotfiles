@@ -74,22 +74,25 @@ active_tab_background $base
 active_tab_foreground ${!preferred_accent}
 inactive_tab_background $base
 inactive_tab_foreground $muted
-color0 $overlay
-color1 $red
-color2 $blue
-color3 $yellow
-color4 $cyan
-color5 $magenta
-color6 $orange
-color7 $text
-color8 $muted
-color9 $red
-color10 $blue
-color11 $yellow
-color12 $cyan
-color13 $magenta
-color14 $orange
-color15 $text
+# ANSI is an upstream terminal palette, deliberately separate from the UI
+# palette above.  In particular, a theme's UI "orange" is not necessarily
+# ANSI cyan, and several upstream themes define distinct bright colours.
+color0 $ansi_0
+color1 $ansi_1
+color2 $ansi_2
+color3 $ansi_3
+color4 $ansi_4
+color5 $ansi_5
+color6 $ansi_6
+color7 $ansi_7
+color8 $ansi_8
+color9 $ansi_9
+color10 $ansi_10
+color11 $ansi_11
+color12 $ansi_12
+color13 $ansi_13
+color14 $ansi_14
+color15 $ansi_15
 EOF
 
     cat > "$output/fuzzel.ini" <<EOF
@@ -99,12 +102,12 @@ text=${text}ff
 prompt=${text}ff
 placeholder=${muted}ff
 input=${text}ff
-match=${orange}ff
-selection=${highlightMed}ff
-selection-text=${text}ff
-selection-match=${orange}ff
-counter=${yellow}ff
-border=${orange}ff
+match=${ui_match}ff
+selection=${ui_selection}ff
+selection-text=${ui_selection_text}ff
+selection-match=${ui_match}ff
+counter=${ui_warning}ff
+border=${ui_accent}ff
 EOF
 
     cat > "$output/hypr.lua" <<EOF
@@ -147,22 +150,22 @@ set -g fish_color_keyword $(hex "$cyan")
 set -g fish_color_quote $(hex "$yellow")
 set -g fish_color_redirection $(hex "$blue")
 set -g fish_color_end $(hex "$subtle")
-set -g fish_color_error $(hex "$red")
+set -g fish_color_error $(hex "$ui_error")
 set -g fish_color_param $(hex "$orange")
 set -g fish_color_comment $(hex "$muted")
-set -g fish_color_selection --background=$(hex "$surface")
+set -g fish_color_selection --background=$(hex "$ui_selection")
 set -g fish_color_autosuggestion $(hex "$muted")
 set -g fish_pager_color_background --background=$(hex "$surface")
 set -g fish_pager_color_prefix $(hex "$cyan")
 set -g fish_pager_color_completion $(hex "$subtle")
-set -g fish_pager_color_selected_background --background=$(hex "$overlay")
-set -g fish_pager_color_selected_completion $(hex "$text")
+set -g fish_pager_color_selected_background --background=$(hex "$ui_selection")
+set -g fish_pager_color_selected_completion $(hex "$ui_selection_text")
 set -gx LS_COLORS 'di=38;2;$(rgb "$blue"):ln=38;2;$(rgb "$cyan"):ex=38;2;$(rgb "$magenta"):*.tar=38;2;$(rgb "$yellow"):*.zip=38;2;$(rgb "$yellow"):*.jpg=38;2;$(rgb "$orange"):*.png=38;2;$(rgb "$orange")'
 
 EOF
 
     cat > "$output/fzf.fish" <<EOF
-set -gx FZF_DEFAULT_OPTS '--color=fg:$subtle,bg:$base,hl:$orange --color=fg+:$text,bg+:$overlay,hl+:$orange --color=border:$highlightMed,header:$blue,gutter:$base --color=spinner:$yellow,info:$cyan,separator:$highlightMed --color=pointer:$magenta,marker:$red,prompt:$subtle'
+set -gx FZF_DEFAULT_OPTS '--color=fg:$subtle,bg:$base,hl:$ui_match --color=fg+:$text,bg+:$ui_selection,hl+:$ui_match --color=border:$ui_accent,header:$ui_link,gutter:$base --color=spinner:$ui_warning,info:$ui_info,separator:$ui_selection --color=pointer:$magenta,marker:$ui_error,prompt:$subtle'
 EOF
 
     printf 'palette = "active"\n\n' > "$output/starship.toml"
@@ -183,6 +186,13 @@ orange = "$orange"
 blue = "$blue"
 cyan = "$cyan"
 magenta = "$magenta"
+accent = "$ui_accent"
+match = "$ui_match"
+link = "$ui_link"
+success = "$ui_success"
+warning = "$ui_warning"
+error = "$ui_error"
+info = "$ui_info"
 EOF
 
     cat > "$output/delta.gitconfig" <<EOF
@@ -191,19 +201,19 @@ EOF
     file-style = "$text" bold
     file-decoration-style = "$highlightMed" ul
     hunk-header-decoration-style = "$highlightMed" box ul
-    hunk-header-file-style = "$blue" bold
-    hunk-header-line-number-style = "$orange" bold
+    hunk-header-file-style = "$ui_info" bold
+    hunk-header-line-number-style = "$ui_match" bold
     line-numbers-left-style = "$muted"
     line-numbers-right-style = "$muted"
-    line-numbers-minus-style = "$red"
-    line-numbers-plus-style = "$cyan"
+    line-numbers-minus-style = "$ui_git_delete"
+    line-numbers-plus-style = "$ui_git_add"
     line-numbers-zero-style = "$muted"
-    minus-style = syntax "$redDim"
-    minus-emph-style = syntax "$red"
-    plus-style = syntax "$cyanDim"
-    plus-emph-style = syntax "$cyan"
+    minus-style = syntax "$ui_git_delete"
+    minus-emph-style = syntax "$ui_error"
+    plus-style = syntax "$ui_git_add"
+    plus-emph-style = syntax "$ui_success"
     zero-style = syntax
-    whitespace-error-style = "$yellow" reverse
+    whitespace-error-style = "$ui_warning" reverse
     blame-palette = "$base" "$surface" "$overlay" "$highlightMed"
 EOF
 
@@ -212,15 +222,15 @@ EOF
 colourful: true
 filekinds:
   normal: {foreground: "$text"}
-  directory: {foreground: "$blue"}
-  symlink: {foreground: "$cyan"}
+  directory: {foreground: "$ui_info"}
+  symlink: {foreground: "$ui_link"}
   executable: {foreground: "$magenta"}
   pipe: {foreground: "$yellow"}
   socket: {foreground: "$orange"}
   block_device: {foreground: "$orange"}
   char_device: {foreground: "$yellow"}
   special: {foreground: "$magenta"}
-  mount_point: {foreground: "$cyan"}
+  mount_point: {foreground: "$ui_link"}
 perms:
   user_read: {foreground: "$subtle"}
   user_write: {foreground: "$yellow"}
@@ -237,7 +247,7 @@ perms:
   attribute: {foreground: "$subtle"}
 size:
   major: {foreground: "$subtle"}
-  minor: {foreground: "$cyan"}
+  minor: {foreground: "$ui_info"}
   number_byte: {foreground: "$subtle"}
   number_kilo: {foreground: "$blue"}
   number_mega: {foreground: "$blue"}
@@ -247,7 +257,7 @@ size:
   unit_kilo: {foreground: "$blue"}
   unit_mega: {foreground: "$magenta"}
   unit_giga: {foreground: "$magenta"}
-  unit_huge: {foreground: "$cyan"}
+  unit_huge: {foreground: "$ui_info"}
 users:
   user_you: {foreground: "$yellow"}
   user_root: {foreground: "$red"}
@@ -256,33 +266,33 @@ users:
   group_other: {foreground: "$muted"}
   group_root: {foreground: "$red"}
 links:
-  normal: {foreground: "$cyan"}
+  normal: {foreground: "$ui_link"}
   multi_link_file: {foreground: "$blue"}
 git:
-  new: {foreground: "$cyan"}
-  modified: {foreground: "$yellow"}
-  deleted: {foreground: "$red"}
+  new: {foreground: "$ui_git_add"}
+  modified: {foreground: "$ui_git_change"}
+  deleted: {foreground: "$ui_git_delete"}
   renamed: {foreground: "$magenta"}
   ignored: {foreground: "$muted"}
   typechange: {foreground: "$magenta"}
-  conflicted: {foreground: "$orange"}
+  conflicted: {foreground: "$ui_warning"}
 git_repo:
   branch_main: {foreground: "$subtle"}
   branch_other: {foreground: "$magenta"}
-  git_clean: {foreground: "$cyan"}
-  git_dirty: {foreground: "$red"}
+  git_clean: {foreground: "$ui_git_add"}
+  git_dirty: {foreground: "$ui_error"}
 security_context:
   colon: {foreground: "$subtle"}
-  user: {foreground: "$cyan"}
+  user: {foreground: "$ui_info"}
   role: {foreground: "$magenta"}
   typ: {foreground: "$muted"}
   range: {foreground: "$magenta"}
 file_type:
   image: {foreground: "$yellow"}
   video: {foreground: "$red"}
-  music: {foreground: "$cyan"}
+  music: {foreground: "$ui_info"}
   lossless: {foreground: "$muted"}
-  crypto: {foreground: "$cyan"}
+  crypto: {foreground: "$ui_info"}
   document: {foreground: "$subtle"}
   compressed: {foreground: "$magenta"}
   temp: {foreground: "$orange"}
@@ -294,9 +304,9 @@ date: {foreground: "$blue"}
 inode: {foreground: "$subtle"}
 blocks: {foreground: "$muted"}
 header: {foreground: "$subtle"}
-octal: {foreground: "$cyan"}
+  octal: {foreground: "$ui_info"}
 flags: {foreground: "$magenta"}
-symlink_path: {foreground: "$cyan"}
+  symlink_path: {foreground: "$ui_link"}
 control_char: {foreground: "$blue"}
 broken_symlink: {foreground: "$red"}
 broken_path_overlay: {foreground: "$red"}
@@ -327,11 +337,24 @@ Singleton {
     readonly property color cyan: "$cyan"
     readonly property color cyanDim: "$cyanDim"
     readonly property color magenta: "$magenta"
+    readonly property color accent: "$ui_accent"
+    readonly property color accentDim: "$ui_accent_dim"
+    readonly property color selection: "$ui_selection"
+    readonly property color selectionText: "$ui_selection_text"
+    readonly property color match: "$ui_match"
+    readonly property color link: "$ui_link"
+    readonly property color success: "$ui_success"
+    readonly property color warning: "$ui_warning"
+    readonly property color error: "$ui_error"
+    readonly property color info: "$ui_info"
+    readonly property color gitAdd: "$ui_git_add"
+    readonly property color gitChange: "$ui_git_change"
+    readonly property color gitDelete: "$ui_git_delete"
     readonly property color magentaDim: "$magentaDim"
     readonly property var _accentMap: ({ red: red, yellow: yellow, orange: orange, blue: blue, cyan: cyan, magenta: magenta })
     readonly property var _accentDimMap: ({ red: redDim, yellow: yellowDim, orange: orangeDim, blue: blueDim, cyan: cyanDim, magenta: magentaDim })
-    readonly property color defaultAccent: _accentMap["$preferred_accent"] ?? yellow
-    readonly property color defaultAccentDim: _accentDimMap["$preferred_accent"] ?? yellowDim
+    readonly property color defaultAccent: accent
+    readonly property color defaultAccentDim: accentDim
     readonly property color accent: Config.accentColor === "default" ? defaultAccent : (_accentMap[Config.accentColor] ?? defaultAccent)
     readonly property color accentDim: Config.accentColor === "default" ? defaultAccentDim : (_accentDimMap[Config.accentColor] ?? defaultAccentDim)
     readonly property color volumeColor: _accentMap[Config.volumeAccent] ?? magenta
@@ -436,14 +459,34 @@ palette="$themes_dir/$theme/palette.conf"
 test -r "$palette" || { printf 'theme-set: unknown theme: %s\n' "$theme" >&2; exit 1; }
 
 source "$palette"
+ui_palette="$themes_dir/${theme%-oled}/ui.conf"
+test -r "$ui_palette" || { printf 'theme-set: missing UI palette for %s\n' "$theme" >&2; exit 1; }
+source "$ui_palette"
+ansi_palette="$themes_dir/${theme%-oled}/ansi.conf"
+test -r "$ansi_palette" || { printf 'theme-set: missing ANSI palette for %s\n' "$theme" >&2; exit 1; }
+source "$ansi_palette"
 oled=false
 [[ "$theme" == *-oled ]] && oled=true
-required=(base surface overlay muted subtle text red redDim yellow yellowDim orange orangeDim blue blueDim cyan cyanDim magenta magentaDim highlightLow highlightMed highlightHigh nvim_colorscheme htop_scheme preferred_accent)
+required=(base surface overlay muted subtle text red redDim yellow yellowDim orange orangeDim blue blueDim cyan cyanDim magenta magentaDim highlightLow highlightMed highlightHigh nvim_colorscheme htop_scheme preferred_accent ui_accent ui_accent_dim ui_selection ui_selection_text ui_match ui_link ui_success ui_warning ui_error ui_info ui_git_add ui_git_change ui_git_delete ansi_0 ansi_1 ansi_2 ansi_3 ansi_4 ansi_5 ansi_6 ansi_7 ansi_8 ansi_9 ansi_10 ansi_11 ansi_12 ansi_13 ansi_14 ansi_15)
 for key in "${required[@]}"; do
     test -n "${!key:-}" || { printf 'theme-set: %s is missing %s\n' "$theme" "$key" >&2; exit 1; }
 done
 
+ui_roles=(ui_accent ui_accent_dim ui_selection ui_selection_text ui_match ui_link ui_success ui_warning ui_error ui_info ui_git_add ui_git_change ui_git_delete)
+for role in "${ui_roles[@]}"; do
+    color_name="${!role}"
+    color_value="${!color_name:-}"
+    [[ "$color_value" =~ ^#[[:xdigit:]]{6}$ ]] || {
+        printf 'theme-set: %s has invalid colour reference %s in %s\n' "$role" "$color_name" "$ui_palette" >&2
+        exit 1
+    }
+    printf -v "$role" '%s' "$color_value"
+done
+
 mkdir -p "$state_dir"
+command -v flock >/dev/null 2>&1 || { printf 'theme-set: flock is required\n' >&2; exit 1; }
+exec 9>"$state_dir/.theme-set.lock"
+flock -x 9
 tmp_dir="$(mktemp -d "$state_dir/.$theme.XXXXXX")"
 trap 'rm -rf "$tmp_dir"' EXIT
 render "$tmp_dir"

@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+config_dir="${XDG_CONFIG_HOME:-$HOME/.config}"
+themes_dir="$config_dir/theme/themes"
+
+palette_keys=(base surface overlay muted subtle text red redDim yellow yellowDim orange orangeDim blue blueDim cyan cyanDim magenta magentaDim highlightLow highlightMed highlightHigh nvim_colorscheme htop_scheme preferred_accent)
+ui_keys=(ui_accent ui_accent_dim ui_selection ui_selection_text ui_match ui_link ui_success ui_warning ui_error ui_info ui_git_add ui_git_change ui_git_delete)
+ansi_keys=(ansi_0 ansi_1 ansi_2 ansi_3 ansi_4 ansi_5 ansi_6 ansi_7 ansi_8 ansi_9 ansi_10 ansi_11 ansi_12 ansi_13 ansi_14 ansi_15)
+
+die() {
+    printf 'theme-validate: %s\n' "$*" >&2
+    exit 1
+}
+
+is_hex() {
+    [[ "$1" =~ ^#[[:xdigit:]]{6}$ ]]
+}
+
+test -d "$themes_dir" || die "missing themes directory: $themes_dir"
+
+count=0
+for palette in "$themes_dir"/*/palette.conf; do
+    theme="${palette%/palette.conf}"
+    name="${theme##*/}"
+    [[ "$name" == *-oled ]] && continue
+
+    oled_palette="$themes_dir/$name-oled/palette.conf"
+    ui_palette="$theme/ui.conf"
+    ansi_palette="$theme/ansi.conf"
+    test -r "$oled_palette" || die "$name is missing its OLED palette"
+    test -r "$ui_palette" || die "$name is missing ui.conf"
+    test -r "$ansi_palette" || die "$name is missing ansi.conf"
+
+    # shellcheck disable=SC1090
+    source "$palette"
+    declare -A base_values=()
+    for key in "${palette_keys[@]}"; do
+        value="${!key:-}"
+        test -n "$value" || die "$name is missing $key"
+        case "$key" in
+            nvim_colorscheme|htop_scheme|preferred_accent) ;;
+            *) is_hex "$value" || die "$name has non-hex $key: $value" ;;
+        esac
+        base_values["$key"]="$value"
+    done
+
+    # shellcheck disable=SC1090
+    source "$ui_palette"
+    for key in "${ui_keys[@]}"; do
+        color_name="${!key:-}"
+        color_value="${!color_name:-}"
+        test -n "$color_name" && is_hex "$color_value" || die "$name has invalid $key reference: $color_name"
+    done
+
+    # shellcheck disable=SC1090
+    source "$ansi_palette"
+    for key in "${ansi_keys[@]}"; do
+        is_hex "${!key:-}" || die "$name has invalid $key"
+    done
+
+    # OLED variants may alter only the canvas base; UI and ANSI inherit unchanged.
+    # shellcheck disable=SC1090
+    source "$oled_palette"
+    for key in "${palette_keys[@]}"; do
+        [[ "$key" == base ]] && continue
+        [[ "${!key:-}" == "${base_values[$key]}" ]] || die "$name-oled changes $key; only base may differ"
+    done
+    is_hex "$base" || die "$name-oled has invalid base"
+    ((count += 1))
+done
+
+printf 'Validated %d theme families, including UI roles, ANSI palettes, and OLED inheritance.\n' "$count"
