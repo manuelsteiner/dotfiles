@@ -507,5 +507,11 @@ fi
 printf '%s\n' "$theme" > "$state_dir/current.name"
 update_htop
 
+# The state transition is complete.  Release the lock before launching or
+# reloading clients: a daemonized child such as Quickshell inherits open file
+# descriptors and would otherwise keep this lock forever.
+flock -u 9
+exec 9>&-
+
 if ! "$no_reload"; then reload_apps; fi
 printf 'Theme set to %s\n' "$theme"
