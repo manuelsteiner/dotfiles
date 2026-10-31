@@ -337,8 +337,8 @@ Singleton {
     readonly property color cyan: "$cyan"
     readonly property color cyanDim: "$cyanDim"
     readonly property color magenta: "$magenta"
-    readonly property color accent: "$ui_accent"
-    readonly property color accentDim: "$ui_accent_dim"
+    readonly property color semanticAccent: "$ui_accent"
+    readonly property color semanticAccentDim: "$ui_accent_dim"
     readonly property color selection: "$ui_selection"
     readonly property color selectionText: "$ui_selection_text"
     readonly property color match: "$ui_match"
@@ -353,8 +353,8 @@ Singleton {
     readonly property color magentaDim: "$magentaDim"
     readonly property var _accentMap: ({ red: red, yellow: yellow, orange: orange, blue: blue, cyan: cyan, magenta: magenta })
     readonly property var _accentDimMap: ({ red: redDim, yellow: yellowDim, orange: orangeDim, blue: blueDim, cyan: cyanDim, magenta: magentaDim })
-    readonly property color defaultAccent: accent
-    readonly property color defaultAccentDim: accentDim
+    readonly property color defaultAccent: semanticAccent
+    readonly property color defaultAccentDim: semanticAccentDim
     readonly property color accent: Config.accentColor === "default" ? defaultAccent : (_accentMap[Config.accentColor] ?? defaultAccent)
     readonly property color accentDim: Config.accentColor === "default" ? defaultAccentDim : (_accentDimMap[Config.accentColor] ?? defaultAccentDim)
     readonly property color volumeColor: _accentMap[Config.volumeAccent] ?? magenta
