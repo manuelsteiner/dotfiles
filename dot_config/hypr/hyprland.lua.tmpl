@@ -25,15 +25,15 @@ hl.monitor({
 })
 {{- else if eq .host "nuc" }}
 hl.monitor({
-    output   = "HDMI-A-2",
-    mode     = "3840x2160@60.00",
+    output   = "DP-3",
+    mode     = "3840x2160@120.00",
     position = "0x0",
     scale    = 1,
 })
 
 hl.monitor({
     output   = "DP-1",
-    mode     = "3840x2160@240.00",
+    mode     = "3840x2160@120.00",
     position = "3840x0",
     scale    = 1,
 })
