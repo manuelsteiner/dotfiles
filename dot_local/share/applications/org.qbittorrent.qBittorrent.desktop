@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=qBittorrent
+GenericName=BitTorrent client
+Comment=Download and share files over BitTorrent
+Icon=qbittorrent
+Exec=/usr/bin/env QT_QPA_PLATFORMTHEME=gtk3 /usr/bin/qbittorrent %U
+Terminal=false
+StartupNotify=false
+StartupWMClass=qbittorrent
+Categories=Network;FileTransfer;P2P;Qt;
+MimeType=application/x-bittorrent;x-scheme-handler/magnet;
+Keywords=bittorrent;torrent;magnet;download;p2p;
