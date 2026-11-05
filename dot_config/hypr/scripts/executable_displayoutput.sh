@@ -8,6 +8,32 @@ monitor_serial="W5LMAS021679"
 right_monitor="DP-1"
 left_monitor="DP-3"
 workspace_state="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/asus-right-workspaces.json"
+window_move_animation_suppressed=0
+workspace_animation_suppressed=0
+
+restore_window_move_animation() {
+    (( window_move_animation_suppressed )) || return 0
+    if hyprctl eval \
+        'hl.animation({ leaf = "windowsMove", enabled = true, speed = 4.79, bezier = "easeOutQuint" })' \
+        >/dev/null; then
+        window_move_animation_suppressed=0
+    else
+        return 1
+    fi
+}
+
+restore_workspace_animation() {
+    (( workspace_animation_suppressed )) || return 0
+    if hyprctl eval \
+        'hl.animation({ leaf = "workspaces", enabled = true, speed = 1.94, bezier = "almostLinear", style = "fade" }); hl.animation({ leaf = "workspacesIn", enabled = true, speed = 1.21, bezier = "almostLinear", style = "fade" }); hl.animation({ leaf = "workspacesOut", enabled = true, speed = 1.94, bezier = "almostLinear", style = "fade" })' \
+        >/dev/null; then
+        workspace_animation_suppressed=0
+    else
+        return 1
+    fi
+}
+
+trap 'restore_workspace_animation || true; restore_window_move_animation || true' EXIT
 
 current=$(ddcutil --sn "$monitor_serial" getvcp 0x60 |
     sed -nE 's/.*\(sl=0x([[:xdigit:]]+)\).*/\1/p' |
@@ -63,24 +89,27 @@ saved_workspaces_are_on() {
     done < <(jq -r '.workspaces[].id' "$workspace_state")
 }
 
-focus_saved_workspace() {
+refresh_saved_workspaces() {
     local target_monitor="$1"
     local active_workspace
+    local other_workspace_ids
 
     active_workspace=$(jq -r '.active // empty' "$workspace_state")
     [[ -n "$active_workspace" ]] || return 0
     jq -e --argjson id "$active_workspace" \
         'any(.workspaces[]; .id == $id)' "$workspace_state" >/dev/null || return 0
 
-    hyprctl eval \
-        "local ws = hl.get_workspace($active_workspace); local mon = hl.get_monitor(\"$target_monitor\"); if ws and mon then hl.dispatch(hl.dsp.focus({ workspace = ws })) end" \
-        >/dev/null
-}
+    other_workspace_ids=$(jq -r --argjson active "$active_workspace" \
+        '[.workspaces[].id | select(. != $active) | tostring] | join(",")' \
+        "$workspace_state")
 
-settle_workspace_animation() {
-    # The configured workspace animation lasts 194 ms; let it finish before
-    # changing the monitor input or returning control to the user.
-    sleep 0.3
+    window_move_animation_suppressed=1
+    workspace_animation_suppressed=1
+    hyprctl eval \
+        "local mon = hl.get_monitor(\"$target_monitor\"); if not mon then error(\"Monitor not found\") end; hl.animation({ leaf = \"windowsMove\", enabled = false }); hl.animation({ leaf = \"workspaces\", enabled = false }); hl.animation({ leaf = \"workspacesIn\", enabled = false }); hl.animation({ leaf = \"workspacesOut\", enabled = false }); for _, id in ipairs({$other_workspace_ids}) do local ws = hl.get_workspace(id); if ws then hl.dispatch(hl.dsp.focus({ workspace = ws })) end end; hl.animation({ leaf = \"workspaces\", enabled = true, speed = 1.94, bezier = \"almostLinear\", style = \"fade\" }); hl.animation({ leaf = \"workspacesIn\", enabled = true, speed = 1.21, bezier = \"almostLinear\", style = \"fade\" }); hl.animation({ leaf = \"workspacesOut\", enabled = true, speed = 1.94, bezier = \"almostLinear\", style = \"fade\" }); local ws = hl.get_workspace($active_workspace); if ws then hl.dispatch(hl.dsp.focus({ workspace = ws })) end" \
+        >/dev/null
+    workspace_animation_suppressed=0
+    restore_window_move_animation
 }
 
 wait_for_right_monitor() {
@@ -110,8 +139,9 @@ restore_right_workspaces() {
             "$right_monitor" "$workspace_state" >&2
         return 1
     fi
-    focus_saved_workspace "$right_monitor"
-    settle_workspace_animation
+
+    # Reflow every workspace while DP-1 is still showing the external input.
+    refresh_saved_workspaces "$right_monitor"
     rm -f "$workspace_state"
 }
 
@@ -139,8 +169,7 @@ case $current in
             fi
             exit 1
         fi
-        focus_saved_workspace "$left_monitor"
-        settle_workspace_animation
+        refresh_saved_workspaces "$left_monitor"
 
         if ! ddcutil --sn "$monitor_serial" setvcp 0x60 0x1a; then
             move_saved_workspaces "$right_monitor"
@@ -151,8 +180,8 @@ case $current in
         fi
         ;;
     1a)
-        ddcutil --sn "$monitor_serial" setvcp 0x60 0x0f
         restore_right_workspaces
+        ddcutil --sn "$monitor_serial" setvcp 0x60 0x0f
         ;;
 
     *)
