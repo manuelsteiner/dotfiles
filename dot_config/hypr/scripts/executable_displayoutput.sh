@@ -112,6 +112,14 @@ refresh_saved_workspaces() {
     restore_window_move_animation
 }
 
+focus_workspace() {
+    local workspace_id="$1"
+    local target_monitor="$2"
+    hyprctl eval \
+        "local ws = hl.get_workspace($workspace_id); local mon = hl.get_monitor(\"$target_monitor\"); if ws and mon then hl.dispatch(hl.dsp.focus({ workspace = ws })) end" \
+        >/dev/null
+}
+
 wait_for_right_monitor() {
     local attempt
 
@@ -125,12 +133,31 @@ wait_for_right_monitor() {
 }
 
 restore_right_workspaces() {
+    local current_workspace
+    local current_workspace_id
+    local current_workspace_monitor
+    local current_workspace_is_saved=0
+    local temporary_file
+
     [[ -f "$workspace_state" ]] || return 0
 
     if ! wait_for_right_monitor; then
         printf 'Timed out waiting for %s to reconnect; saved workspace list kept at %s\n' \
             "$right_monitor" "$workspace_state" >&2
         return 1
+    fi
+
+    current_workspace=$(hyprctl activeworkspace -j)
+    current_workspace_id=$(jq -r '.id // empty' <<<"$current_workspace")
+    current_workspace_monitor=$(jq -r '.monitor // empty' <<<"$current_workspace")
+    if [[ -n "$current_workspace_id" ]] &&
+        jq -e --argjson id "$current_workspace_id" \
+            'any(.workspaces[]; .id == $id)' "$workspace_state" >/dev/null; then
+        temporary_file="${workspace_state}.tmp.$$"
+        jq --argjson id "$current_workspace_id" '.active = $id' \
+            "$workspace_state" >"$temporary_file"
+        mv "$temporary_file" "$workspace_state"
+        current_workspace_is_saved=1
     fi
 
     move_saved_workspaces "$right_monitor"
@@ -142,6 +169,10 @@ restore_right_workspaces() {
 
     # Reflow every workspace while DP-1 is still showing the external input.
     refresh_saved_workspaces "$right_monitor"
+    if (( ! current_workspace_is_saved )) &&
+        [[ "$current_workspace_monitor" == "$left_monitor" && -n "$current_workspace_id" ]]; then
+        focus_workspace "$current_workspace_id" "$left_monitor"
+    fi
     rm -f "$workspace_state"
 }
 
