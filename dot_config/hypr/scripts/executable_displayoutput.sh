@@ -20,57 +20,61 @@ monitor_is_connected() {
 
 save_right_workspaces() {
     local temporary_file="${workspace_state}.tmp.$$"
+    local active_workspace
 
+    active_workspace=$(hyprctl monitors -j |
+        jq -er --arg monitor "$right_monitor" \
+            '.[] | select(.name == $monitor) | .activeWorkspace.id')
     hyprctl workspaces -j |
-        jq --arg monitor "$right_monitor" \
-            '[.[] | select(.monitor == $monitor and (.type == "normal" or .type == "special")) |
-             select((.name | ascii_downcase | contains("multimedia")) | not) |
-             {type, name, id}]' >"$temporary_file"
+        jq --arg monitor "$right_monitor" --argjson active "$active_workspace" \
+            '{active: $active,
+              workspaces: [
+                .[] |
+                select(.monitor == $monitor and .type == "normal") |
+                select((.name | ascii_downcase | contains("multimedia")) | not) |
+                {name, id}
+              ]}' >"$temporary_file"
     mv "$temporary_file" "$workspace_state"
 }
 
 move_saved_workspaces() {
     local target_monitor="$1"
-    local workspace workspace_type workspace_id workspace_name
+    local workspace_id
 
-    while IFS= read -r workspace; do
-        workspace_type=$(jq -r '.type' <<<"$workspace")
-        workspace_id=$(jq -r '.id // empty' <<<"$workspace")
-        workspace_name=$(jq -r '.name' <<<"$workspace")
-
-        if [[ "$workspace_type" == "normal" ]]; then
-            hyprctl eval \
-                "local ws = hl.get_workspace($workspace_id); local mon = hl.get_monitor(\"$target_monitor\"); if ws and mon then hl.dispatch(hl.dsp.workspace.move({ workspace = ws, monitor = mon })) end" \
-                >/dev/null
-        else
-            hyprctl eval \
-                "local ws = hl.get_workspace(\"$workspace_name\"); local mon = hl.get_monitor(\"$target_monitor\"); if ws and mon then mon:set_special_workspace(ws) end" \
-                >/dev/null
-        fi
-    done < <(jq -c '.[]' "$workspace_state")
+    while IFS= read -r workspace_id; do
+        [[ -n "$workspace_id" ]] || continue
+        hyprctl eval \
+            "local ws = hl.get_workspace($workspace_id); local mon = hl.get_monitor(\"$target_monitor\"); if ws and mon then hl.dispatch(hl.dsp.workspace.move({ workspace = ws, monitor = mon })) end" \
+            >/dev/null
+    done < <(jq -r '.workspaces[].id' "$workspace_state")
 }
 
 saved_workspaces_are_on() {
     local target_monitor="$1"
-    local workspace workspace_type workspace_id workspace_name
+    local workspace_id
 
-    while IFS= read -r workspace; do
-        workspace_type=$(jq -r '.type' <<<"$workspace")
-        workspace_id=$(jq -r '.id // empty' <<<"$workspace")
-        workspace_name=$(jq -r '.name' <<<"$workspace")
-
-        if [[ "$workspace_type" == "normal" ]]; then
-            if ! hyprctl workspaces -j |
-                jq -e --arg monitor "$target_monitor" --argjson id "$workspace_id" \
-                    'any(.[]; .id == $id and .monitor == $monitor)' >/dev/null; then
-                return 1
-            fi
-        elif ! hyprctl workspaces -j |
-            jq -e --arg monitor "$target_monitor" --arg name "$workspace_name" \
-                'any(.[]; .name == $name and .type == "special" and .monitor == $monitor)' >/dev/null; then
+    while IFS= read -r workspace_id; do
+        [[ -n "$workspace_id" ]] || continue
+        if ! hyprctl workspaces -j |
+            jq -e --arg monitor "$target_monitor" --argjson id "$workspace_id" \
+                'any(.[]; .id == $id and .monitor == $monitor)' >/dev/null; then
             return 1
         fi
-    done < <(jq -c '.[]' "$workspace_state")
+    done < <(jq -r '.workspaces[].id' "$workspace_state")
+}
+
+focus_saved_workspace() {
+    local target_monitor="$1"
+    local active_workspace
+
+    active_workspace=$(jq -r '.active // empty' "$workspace_state")
+    [[ -n "$active_workspace" ]] || return 0
+    jq -e --argjson id "$active_workspace" \
+        'any(.workspaces[]; .id == $id)' "$workspace_state" >/dev/null || return 0
+
+    hyprctl eval \
+        "local ws = hl.get_workspace($active_workspace); local mon = hl.get_monitor(\"$target_monitor\"); if ws and mon then hl.dispatch(hl.dsp.focus({ workspace = ws })) end" \
+        >/dev/null
 }
 
 wait_for_right_monitor() {
@@ -100,6 +104,7 @@ restore_right_workspaces() {
             "$right_monitor" "$workspace_state" >&2
         return 1
     fi
+    focus_saved_workspace "$right_monitor"
     rm -f "$workspace_state"
 }
 
@@ -127,6 +132,7 @@ case $current in
             fi
             exit 1
         fi
+        focus_saved_workspace "$left_monitor"
 
         if ! ddcutil --sn "$monitor_serial" setvcp 0x60 0x1a; then
             move_saved_workspaces "$right_monitor"
