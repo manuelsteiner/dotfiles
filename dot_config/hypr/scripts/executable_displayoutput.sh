@@ -77,6 +77,12 @@ focus_saved_workspace() {
         >/dev/null
 }
 
+settle_workspace_animation() {
+    # The configured workspace animation lasts 194 ms; let it finish before
+    # changing the monitor input or returning control to the user.
+    sleep 0.3
+}
+
 wait_for_right_monitor() {
     local attempt
 
@@ -105,6 +111,7 @@ restore_right_workspaces() {
         return 1
     fi
     focus_saved_workspace "$right_monitor"
+    settle_workspace_animation
     rm -f "$workspace_state"
 }
 
@@ -133,6 +140,7 @@ case $current in
             exit 1
         fi
         focus_saved_workspace "$left_monitor"
+        settle_workspace_animation
 
         if ! ddcutil --sn "$monitor_serial" setvcp 0x60 0x1a; then
             move_saved_workspaces "$right_monitor"
