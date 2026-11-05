@@ -18,6 +18,8 @@ if set -q XDG_RUNTIME_DIR
     set -gx SSH_AUTH_SOCK "$XDG_RUNTIME_DIR/ssh-agent.socket"
 end
 
+set -gx SSH_ASKPASS "$HOME/.local/bin/ssh-askpass-darkman"
+
 set -l himalaya_config_home "$HOME/.config"
 if set -q XDG_CONFIG_HOME
     set himalaya_config_home "$XDG_CONFIG_HOME"

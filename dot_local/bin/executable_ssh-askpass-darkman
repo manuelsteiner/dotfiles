@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "$(darkman get 2>/dev/null || true)" in
+    dark)
+        export GTK_THEME=adw-gtk3-dark
+        ;;
+    light)
+        export GTK_THEME=adw-gtk3
+        ;;
+esac
+
+exec /usr/lib/seahorse/ssh-askpass "$@"
