@@ -6,7 +6,7 @@ Documentation=man:ssh-agent(1) man:ssh(1)
 
 [Service]
 Environment=SSH_AUTH_SOCK=%t/ssh-agent.socket
-Environment=SSH_ASKPASS=/usr/lib/seahorse/ssh-askpass
+Environment=SSH_ASKPASS=%h/.local/bin/ssh-askpass-darkman
 Environment=DISPLAY=:0
 ExecStart=/usr/bin/ssh-agent -D -a ${SSH_AUTH_SOCK}
 SuccessExitStatus=2
