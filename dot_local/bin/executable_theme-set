@@ -49,6 +49,7 @@ blend() {
 
 render() {
     local output="$1"
+    local hyprtoolkit_light_accent hyprtoolkit_light_accent_secondary
     local elev1_alpha='Config.elev1Alpha'
     local elev2_alpha='Config.elev2Alpha'
     local hyprlock_elev2_alpha='0.07'
@@ -118,6 +119,31 @@ return {
     blue = 0xff$(hex "$blue"), cyan = 0xff$(hex "$cyan"), magenta = 0xff$(hex "$magenta"),
     highlightLow = 0xff$(hex "$highlightLow"), highlightMed = 0xff$(hex "$highlightMed"), highlightHigh = 0xff$(hex "$highlightHigh"),
 }
+EOF
+
+    hyprtoolkit_light_accent="$(blend "$ui_accent" '#000000' 0.42)"
+    hyprtoolkit_light_accent_secondary="$(blend "$ui_link" '#000000' 0.42)"
+
+    cat > "$output/hyprtoolkit-dark.conf" <<EOF
+background = 0xff$(hex "$base")
+base = 0xff$(hex "$surface")
+alternate_base = 0xff$(hex "$overlay")
+text = 0xff$(hex "$text")
+bright_text = 0xff$(hex "$text")
+accent = 0xff$(hex "$ui_accent")
+accent_secondary = 0xff$(hex "$ui_link")
+font_family = "Cantarell"
+EOF
+
+    cat > "$output/hyprtoolkit-light.conf" <<EOF
+background = 0xfff6f5f4
+base = 0xffffffff
+alternate_base = 0xffe9e8e7
+text = 0xff242424
+bright_text = 0xff000000
+accent = 0xff${hyprtoolkit_light_accent}
+accent_secondary = 0xff${hyprtoolkit_light_accent_secondary}
+font_family = "Cantarell"
 EOF
 
     local elev2_hex edge_hex edge_strong_hex
@@ -506,6 +532,10 @@ fi
 
 printf '%s\n' "$theme" > "$state_dir/current.name"
 update_htop
+if command -v darkman >/dev/null 2>&1 &&
+    [[ -x "$HOME/.local/bin/hyprtoolkit-theme-sync" ]]; then
+    "$HOME/.local/bin/hyprtoolkit-theme-sync" "$(darkman get)"
+fi
 
 # The state transition is complete.  Release the lock before launching or
 # reloading clients: a daemonized child such as Quickshell inherits open file

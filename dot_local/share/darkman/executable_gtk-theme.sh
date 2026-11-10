@@ -18,3 +18,4 @@ esac
 
 gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme"
 gsettings set org.gnome.desktop.interface color-scheme "$color_scheme"
+"$HOME/.local/bin/hyprtoolkit-theme-sync" "$1"

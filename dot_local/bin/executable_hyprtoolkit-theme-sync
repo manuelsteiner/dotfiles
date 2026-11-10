@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+config_dir="${XDG_CONFIG_HOME:-$HOME/.config}"
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles-theme"
+mode="${1:-$(darkman get)}"
+
+case "$mode" in
+    dark|light) ;;
+    *)
+        printf 'hyprtoolkit-theme-sync: expected dark or light mode, got: %s\n' \
+            "$mode" >&2
+        exit 2
+        ;;
+esac
+
+theme_config="$state_dir/current/hyprtoolkit-$mode.conf"
+if [[ ! -r "$theme_config" ]]; then
+    exit 0
+fi
+
+mkdir -p "$config_dir/hypr"
+ln -sfnT "$theme_config" "$config_dir/hypr/hyprtoolkit.conf"
