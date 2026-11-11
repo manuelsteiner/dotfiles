@@ -1,3 +1,4 @@
+{{ if eq .role "private" -}}
 [Desktop Entry]
 Type=Application
 Name=qBittorrent
@@ -11,3 +12,4 @@ StartupWMClass=qbittorrent
 Categories=Network;FileTransfer;P2P;Qt;
 MimeType=application/x-bittorrent;x-scheme-handler/magnet;
 Keywords=bittorrent;torrent;magnet;download;p2p;
+{{ end -}}
