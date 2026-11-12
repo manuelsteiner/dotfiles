@@ -45,6 +45,7 @@ lsp-containers
 
 {{ if ne .role "work" }}
 .config/go/env
+.config/fish/completions/vssh.fish
 .local/bin/commit-helper
 .local/bin/infra-committer
 {{ end }}
