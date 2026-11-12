@@ -1,2 +1,0 @@
-complete -c vssh -f -a '(__fish_print_hostnames)'
-complete -c vssh -f -a '(string match -q "*@*" -- (commandline -ct); and printf "%s\n" (string replace -r "@.*" "@" -- (commandline -ct))(__fish_print_hostnames))'
